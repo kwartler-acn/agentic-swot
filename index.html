@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>NavyFederal::Agentic-SWOT — agent orchestration playground</title>
+<title>Agentic-SWOT — agent orchestration playground</title>
 <style>
-  /* ---- Navy Federal Credit Union dark system -------------------------
-     Palette anchored to NFCU's brand: navy blue (#002d56) + a bright
-     federal blue (#0071bc / #3d9be0 for on-dark legibility). */
+  /* ---- dark neon system ----------------------------------------------
+     Neutral near-black canvas with a bright per-agent neon palette so
+     each worker reads as its own color across the whole UI. */
   :root {
     --bg:        #08090a;   /* page canvas */
-    --panel:     #0a0e12;   /* pane · subtle NFCU-navy tint */
+    --panel:     #0c0c11;   /* pane · neutral dark */
     --card:      #131316;   /* card surface */
     --card-2:    #1a1a1e;   /* inset (inputs) */
     --border:    rgba(255,255,255,.08);
@@ -19,19 +19,19 @@
     --fg-dim:    #9a9aa4;
     --fg-faint:  #63636d;
 
-    --slime:     #0071bc;   /* primary accent · NFCU federal blue */
-    --slime-dim: #005a94;   /* darker NFCU blue */
-    --nf-navy:   #002d56;   /* NFCU navy (deep) */
-    --ok:        #3d9be0;   /* ready indicator · NFCU light blue (on-dark) */
+    --slime:     #bf5af2;   /* primary accent · bright purple */
+    --slime-dim: #9a3fd4;   /* darker purple */
+    --slime-hi:  #d18cf7;   /* lighter purple · hover */
+    --ok:        #35e07a;   /* ready indicator · bright green (on-dark) */
 
-    /* agent palette — NFCU blue lead, with distinct hues per worker */
-    --orch:  #0071bc;       /* orchestrator  · NFCU blue  */
-    --resp:  #7aa2f7;       /* researcher    · blue      */
-    --data:  #4fbf7b;       /* data connector· green     */
-    --coder: #ff9e64;       /* coder         · amber     */
-    --image: #4fd6c8;       /* image         · teal      */
-    --critic:#bb9af7;       /* critic        · violet    */
-    --voice: #f7768e;       /* brand voice   · rose      */
+    /* agent palette — one vivid neon hue per worker */
+    --orch:  #bf5af2;       /* orchestrator  · bright purple */
+    --resp:  #22d3ee;       /* researcher    · cyan          */
+    --data:  #bada55;       /* data connector· bada55 lime   */
+    --coder: #ffd400;       /* coder         · bright yellow */
+    --image: #ff00e5;       /* image         · magenta       */
+    --critic:#ff5c00;       /* critic        · bright orange */
+    --voice: #ff2d78;       /* brand voice   · hot pink      */
 
     --radius: 7px;
     --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -64,7 +64,7 @@
     display: flex; align-items: center; gap: 10px;
     padding: 11px 16px;
     border-bottom: 2px solid var(--slime);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--nf-navy) 34%, var(--panel)), var(--panel));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--slime) 16%, var(--panel)), var(--panel));
   }
   header .logo {
     display: flex; align-items: center; gap: 9px;
@@ -94,7 +94,7 @@
     border: none; border-radius: 6px; cursor: pointer;
     font-size: 13px; font-weight: 600; transition: background .12s;
   }
-  .navtoggle:hover { background: #ff8c3f; }
+  .navtoggle:hover { background: var(--slime-hi); }
 
   /* ---- layout --------------------------------------------------------- */
   main {
@@ -211,7 +211,7 @@
     padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
     letter-spacing: .01em; cursor: pointer; transition: background .12s;
   }
-  button.run:hover { background: #ff8c3f; }
+  button.run:hover { background: var(--slime-hi); }
   button.run:disabled { background: var(--card-2); color: var(--fg-faint); cursor: not-allowed; }
 
   /* save / lock agentic setup */
@@ -221,7 +221,7 @@
     border-radius: 6px; padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
     cursor: pointer; transition: background .12s, color .12s, border-color .12s;
   }
-  button.save:hover { background: #ff8c3f; }
+  button.save:hover { background: var(--slime-hi); }
   button.save.saved { background: var(--card-2); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
   .save-note { font-size: 10.5px; color: var(--fg-faint); text-align: center; margin-top: 7px; }
   .save-note.dirty { color: var(--slime); }
@@ -363,7 +363,7 @@
     padding: 8px 13px; font-family: var(--sans); font-weight: 500; font-size: 12px; cursor: pointer;
     transition: background .12s;
   }
-  button.exp:hover { background: #ff8c3f; }
+  button.exp:hover { background: var(--slime-hi); }
   button.exp.ghost { background: var(--card-2); color: var(--fg); border: 1px solid var(--border-hi); }
   button.exp.ghost:hover { border-color: color-mix(in srgb, var(--slime) 55%, transparent); color: var(--slime); }
   .exp-note { color: var(--fg-faint); font-size: 11px; }
@@ -393,7 +393,7 @@
     border-radius: 6px; padding: 0 18px; font-family: var(--sans); font-weight: 500; cursor: pointer;
     transition: background .12s;
   }
-  .composer button:hover { background: #ff8c3f; }
+  .composer button:hover { background: var(--slime-hi); }
   .composer button:disabled { background: var(--card-2); color: var(--fg-faint); cursor: not-allowed; }
 
   .spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--border-hi);
@@ -409,7 +409,7 @@
 
 <header>
   <div class="hleft">
-    <span class="logo"><span class="u">NavyFederal</span>::<span class="a">Agentic-SWOT</span></span>
+    <span class="logo"><span class="u">Agentic</span>::<span class="a">SWOT</span></span>
     <span class="sub">agent orchestration playground</span>
     <button class="navtoggle" id="toggleCanvas" title="Collapse setup panel" aria-label="Toggle setup panel"><span class="navtoggle-ico">⟨</span></button>
   </div>
@@ -520,8 +520,8 @@
       <div class="body">
         <label class="fld">Connected data sources <span class="fixed-tag">fixed</span></label>
         <div class="data-sources">
-          <a href="https://www.navyfederal.org/about.html" target="_blank" rel="noopener">navyfederal.org — About Navy Federal Credit Union ↗</a>
-          <a href="https://en.wikipedia.org/wiki/Navy_Federal_Credit_Union" target="_blank" rel="noopener">Wikipedia — Navy Federal Credit Union ↗</a>
+          <a href="https://example.com/about" target="_blank" rel="noopener">example.com — Sample source A ↗</a>
+          <a href="https://example.com/wiki" target="_blank" rel="noopener">example.com — Sample source B ↗</a>
         </div>
         <div class="url-help">
           The application has an embedded snapshot of these data sources.
@@ -657,17 +657,17 @@
         Paste your OpenRouter key, connect and write your agent prompts, then
         click <b>save agentic setup</b> (bottom-left) to lock it in.<br>
         That unlocks this chat — type a task below and hit <b>▶ run</b>.<br>
-        The data connector is wired to two <b>Navy Federal Credit Union</b> sources.<br><br>
+        The data connector is wired to two <b>sample sources</b> you can swap for your own.<br><br>
         Watch the orchestrator plan, then each agent's block streams in its own color.<br>
-        <span style="color:var(--data)">green</span> = your data → Strengths &amp; Weaknesses &nbsp;·&nbsp;
-        <span style="color:var(--resp)">blue</span> = live web → Opportunities &amp; Threats &nbsp;·&nbsp;
-        <span style="color:var(--critic)">violet</span> = critic review &nbsp;·&nbsp;
-        <span style="color:var(--voice)">rose</span> = brand voice.
+        <span style="color:var(--data)">lime</span> = your data → Strengths &amp; Weaknesses &nbsp;·&nbsp;
+        <span style="color:var(--resp)">cyan</span> = live web → Opportunities &amp; Threats &nbsp;·&nbsp;
+        <span style="color:var(--critic)">orange</span> = critic review &nbsp;·&nbsp;
+        <span style="color:var(--voice)">pink</span> = brand voice.
       </div>
     </div>
     <div class="memchip" id="memChip" hidden><span>🧠</span> remembering only the last result</div>
     <div class="composer">
-      <input type="text" id="taskInput" placeholder="Build a SWOT for Navy Federal Credit Union" />
+      <input type="text" id="taskInput" placeholder="Build a SWOT for your chosen subject" />
       <button id="sendBtn">▶ run</button>
     </div>
   </section>
@@ -675,7 +675,7 @@
 
 <script>
 /* =====================================================================
-   NavyFederal::Agentic-SWOT — single-file agent orchestration teaching tool.
+   Agentic-SWOT — single-file agent orchestration teaching tool.
    No backend. All model calls go straight to OpenRouter from the browser.
    Read top to bottom; it's meant to be learned from.
    ===================================================================== */
@@ -783,21 +783,24 @@ function loadState() {
   $("taskInput").disabled = true; $("sendBtn").disabled = true;
 }
 
-/* ---- data connector: fixed Navy Federal Credit Union sources -------
-   For this exercise the connector is hard-wired to two NFCU sources and
-   students can't add/remove them. getUrls() just returns that list. */
+/* ---- data connector: fixed sample sources -------------------------
+   For this exercise the connector is hard-wired to two sample sources and
+   students can't add/remove them. Swap these URLs (and the matching
+   DATA_SNAPSHOTS entries below) for your own subject. getUrls() just
+   returns that list. */
 const DATA_SOURCES = [
-  "https://www.navyfederal.org/about.html",
-  "https://en.wikipedia.org/wiki/Navy_Federal_Credit_Union"
+  "https://example.com/about",
+  "https://example.com/wiki"
 ];
 function getUrls() { return [...DATA_SOURCES]; }
 
-/* Embedded snapshots of the two Navy Federal Credit Union sources, captured so
-   the data connector works offline with no network / CORS dependency.
-   Keyed by the exact URL in DATA_SOURCES. */
+/* Embedded snapshots of the two sample sources, so the data connector works
+   offline with no network / CORS dependency. Keyed by the exact URL in
+   DATA_SOURCES. Replace this placeholder text with a snapshot of whatever
+   subject you want the exercise to analyze. */
 const DATA_SNAPSHOTS = {
-  "https://www.navyfederal.org/about.html": "About Navy Federal Credit Union\n\nNavy Federal Credit Union is a member-owned and not-for-profit credit union exclusively serving the military, veterans and their families. Because members are owners rather than customers, they have a voice — and a vote — in decisions about the organization.\n\nNavy Federal was established in 1933 by 7 Navy Department employees who wanted to help themselves and their coworkers reach their financial goals during the Great Depression. From those modest beginnings, it has grown into the world's largest credit union, now serving 15 million member-owners — including officers and enlisted personnel from all branches of the armed forces, veterans, Department of Defense employees, and their family members.\n\nThe credit union's guiding principle is \"Our Members Are the Mission®,\" built on three core values: compassionate service, member-first integrity, and championing the community. Everything the organization does is focused on the financial health and well-being of the military, veterans, and their families.\n\nMember savings are safe and secure. The National Credit Union Administration (NCUA), a U.S. government agency, insures members' savings up to $250,000 and IRA funds up to an additional $250,000. Navy Federal is also examined regularly by independent auditors, including PricewaterhouseCoopers LLP.\n\nIn 2024, Navy Federal assumed operations of Department of Defense Community Bank locations on 60 overseas military installations, extending trusted service to members stationed around the world.\n\n(Snapshot captured from https://www.navyfederal.org/about.html)",
-  "https://en.wikipedia.org/wiki/Navy_Federal_Credit_Union": "Navy Federal Credit Union is the largest natural member (or retail) credit union in the United States, both in asset size and in membership. It is headquartered in Vienna, Virginia, and was originally incorporated on January 17, 1933, as the Navy Department Employees' Credit Union of the District of Columbia.\n\nAs of December 2025, Navy Federal Credit Union had approximately $197.1 billion in total assets and 15.2 million members worldwide. The credit union operates 382 branches globally and employs more than 25,200 people across its locations.\n\nMembership is open to all Department of Defense and Coast Guard active duty, veterans, civilian and contractor personnel, and their families. Navy Federal is chartered with and regulated by the National Credit Union Administration (NCUA) as a single-sponsor credit union, with the Department of Defense serving as its sponsor. The organization is governed by a volunteer board of directors elected from and by its membership.\n\n\n== History ==\n\nNavy Federal was founded in 1933 to serve the employees of the Navy Department. In 1954, membership eligibility broadened to include Navy and Marine Corps officers regardless of their location. By April 1962, Navy Federal had become the biggest credit union in the world — a distinction it still holds today.\n\nMembership eligibility expanded repeatedly over the following decades: in 2008 to include all Department of Defense personnel, in 2013 to encompass Coast Guard members, in 2017 to include all veterans of the armed forces, and in 2020 to add members of the newly created Space Force.\n\nNavy Federal has maintained a long-standing policy of never conducting layoffs. During business downturns, the credit union reassigns employees to other departments rather than eliminating jobs, reflecting its member-first and employee-focused culture.\n\n\n== Products and services ==\n\nAs a full-service financial institution, Navy Federal offers checking and savings accounts, credit cards, auto loans, personal loans, mortgages and home equity products, retirement and investment services, and business accounts, delivered through its branch network, ATMs, contact centers, and digital banking channels.\n\n(Snapshot captured from https://en.wikipedia.org/wiki/Navy_Federal_Credit_Union)"
+  "https://example.com/about": "About [Your Subject]\n\nThis is placeholder source text for the data connector. Replace it with a snapshot of the organization, product, or topic you want the class to analyze.\n\nThe data connector reads from these embedded snapshots (not the live web), so the app runs entirely offline with no network or CORS dependency. Paste a few paragraphs of factual background here — the data agent will mine it for Strengths and Weaknesses.\n\n(Sample snapshot — replace with your own content.)",
+  "https://example.com/wiki": "[Your Subject] — reference overview\n\nThis is a second placeholder snapshot. Replace it with additional background on your chosen subject — history, scale, key facts, structure, and so on.\n\nProvide concrete, factual detail here so the data agent has something substantive to ground its analysis in. The richer the snapshot, the better the resulting SWOT.\n\n(Sample snapshot — replace with your own content.)"
 };
 function saveField(id) {
   if (EPHEMERAL.has(id)) return;              // system prompts + preset never persist
@@ -872,7 +875,7 @@ function updateOrchConnections() {
     const lines = CONN_AGENTS.filter(a => keys.includes(a.key))
       .map(a => `- "${a.key}": ${a.desc}`).join("\n");
     const sep = base ? "\n\n" : "";   // only separate from the student's text if there is any
-    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: these agents run in PARALLEL and do NOT see each other's output within a single turn. Choose every agent that can independently contribute to THIS message. If the request needs content gathered before it can be formatted (e.g. "build an HTML SWOT of Navy Federal Credit Union"), gather it first this turn with data/research — turning that result into code is a good follow-up turn for the coder.\n${CONN_CLOSE}`;
+    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML.\n${CONN_CLOSE}`;
   }
   p.value = base;
   saveField("p-orch");
@@ -903,7 +906,7 @@ async function callModel({ model, system, user, temperature, responseFormat }) {
       "Authorization": "Bearer " + key,
       "Content-Type": "application/json",
       "HTTP-Referer": location.origin,
-      "X-Title": "Navy Federal Agentic-SWOT"
+      "X-Title": "Agentic-SWOT"
     },
     body: JSON.stringify(body)
   });
@@ -936,7 +939,7 @@ async function callImage({ model, prompt, size }) {
       "Authorization": "Bearer " + key,
       "Content-Type": "application/json",
       "HTTP-Referer": location.origin,
-      "X-Title": "Navy Federal Agentic-SWOT"
+      "X-Title": "Agentic-SWOT"
     },
     body: JSON.stringify(body)
   });
@@ -1206,6 +1209,7 @@ async function run() {
   const wants = new Set(plan.agents || ["data","research"]);
   const connected = cfg.connected;
   let dataFindings = "", webFindings = "", coderFindings = "";
+  let allCitations = [];   // researcher citations — carried into the final HTML coder step
 
   // 2) WORKER AGENTS (parallel) — run only if the orchestrator picked
   //    them AND they're connected in the connections box
@@ -1255,6 +1259,7 @@ async function run() {
             .map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n");
         }
         webFindings = findings;
+        allCitations = cites;   // hand the structured sources to the final HTML step
         logStep("researcher", r, { citations: cites });
 
         // Render: analysis text, then a clickable source list, then raw inspector.
@@ -1274,22 +1279,9 @@ async function run() {
     })());
   }
 
-  if (wants.has("coder") && connected.has("coder")) {
-    const b = addBlock("coder", "coder · code", cfg.coder.model);
-    tasks.push((async () => {
-      try {
-        const r = await callModel({
-          model: cfg.coder.model,
-          system: cfg.coder.system,
-          user: memory + task,
-          temperature: cfg.coder.temp
-        });
-        coderFindings = r.content;
-        logStep("coder", r, {});
-        finishBlock(b, r.content, r);
-      } catch (e) { failBlock(b, e.message); logStep("coder", null, { error: e.message }); }
-    })());
-  }
+  // NOTE: the coder is intentionally NOT run here in parallel. It runs LAST
+  // (step 5, below) so it can consume the finished, critic-reviewed SWOT and
+  // the researcher's citations and render them as the final HTML deliverable.
 
   if (wants.has("image") && connected.has("image")) {
     const b = addBlock("image", "image", cfg.image.model);
@@ -1325,7 +1317,7 @@ async function run() {
     const r = await callModel({
       model: cfg.orch.model,
       system: "You are the ORCHESTRATOR. Combine the agent findings into one clear deliverable for the user's task. If the task is a SWOT analysis, use four labeled sections (Strengths, Weaknesses, Opportunities, Threats); otherwise synthesize the findings into a coherent response. Use only the findings provided.",
-      user: memory + `Task: ${task}\n\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}\n\nCODE (coder):\n${coderFindings || "(none)"}`,
+      user: memory + `Task: ${task}\n\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}`,
       temperature: cfg.orch.temp
     });
     report = r.content;
@@ -1411,8 +1403,47 @@ async function run() {
     logStep("brand_voice", r, {});
     finishBlock(vBlock, r.content, r);
   } catch (e) { failBlock(vBlock, e.message); logStep("brand_voice", null, { error: e.message }); }
-  } else if (coderFindings) {
-    finalDeliverable = coderFindings;   // code task: the coder block is the deliverable, unedited
+  }
+
+  // 5) CODER — FINAL STEP: render the finished SWOT as the HTML deliverable.
+  //    Runs LAST, so it consumes the synthesized + critic-reviewed + voiced
+  //    report AND the researcher's citations. When there is a finished report,
+  //    the coder is told to render it (sources included) as one HTML document,
+  //    and that HTML becomes the run's final output. With no upstream findings
+  //    (a pure code task) it behaves like before: just memory + task.
+  if (wants.has("coder") && connected.has("coder")) {
+    const finishedReport = finalDeliverable;   // the voiced, critic-reviewed SWOT (if any)
+    const b = addBlock("coder", finishedReport ? "coder · final HTML" : "coder · code", cfg.coder.model);
+    try {
+      let coderUser;
+      if (finishedReport) {
+        const srcList = allCitations.length
+          ? allCitations.map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n")
+          : "";
+        coderUser = memory +
+`Render the following finished SWOT analysis as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
+- Show all four SWOT sections, clearly labelled: Strengths, Weaknesses, Opportunities, Threats.
+- Preserve the wording and every fact — do not invent new claims.
+- End with a "Sources" section listing the citations below as clickable links (<a href="…" target="_blank" rel="noopener">), numbered to match any [n] markers in the text.${srcList ? "" : "\n- If no citations are provided, omit the Sources section."}
+- Return the full page in a single \`\`\`html fenced code block.
+
+FINISHED SWOT:
+${finishedReport}
+${srcList ? "\nCITATIONS:\n" + srcList : ""}`;
+      } else {
+        coderUser = memory + task;   // pure code task — original behaviour
+      }
+      const r = await callModel({
+        model: cfg.coder.model,
+        system: cfg.coder.system,
+        user: coderUser,
+        temperature: cfg.coder.temp
+      });
+      coderFindings = r.content;
+      finalDeliverable = r.content;   // the HTML is the final output for the exercise
+      logStep("coder", r, { grounded: !!finishedReport, citations: allCitations.length });
+      finishBlock(b, r.content, r);
+    } catch (e) { failBlock(b, e.message); logStep("coder", null, { error: e.message }); }
   }
   } finally {
     runLog.finished_at = new Date().toISOString();
