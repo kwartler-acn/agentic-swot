@@ -574,6 +574,12 @@
         <textarea id="p-image" placeholder="e.g. minimalist flat vector illustration, muted palette"></textarea>
         <label class="fld">model <span class="fixed-tag">fixed</span></label>
         <input type="text" id="m-image" value="qwen/qwen-image-3" readonly title="This model is fixed for the exercise" />
+        <label class="fld">resolution <span style="color:var(--fg-faint)">(smaller = smaller payload, faster)</span></label>
+        <select id="s-image">
+          <option value="512x512" selected>512 × 512 · small</option>
+          <option value="768x768">768 × 768 · medium</option>
+          <option value="1024x1024">1024 × 1024 · large</option>
+        </select>
       </div>
     </div>
 
@@ -910,10 +916,20 @@ async function callModel({ model, system, user, temperature, responseFormat }) {
 
 /* Image generation uses OpenRouter's dedicated /images endpoint, not chat.
    Returns data-URL(s) built from the base64 payload. */
-async function callImage({ model, prompt }) {
+async function callImage({ model, prompt, size }) {
   const key = $("apiKey").value.trim();
   if (!key) throw new Error("No OpenRouter API key set.");
-  const body = { model: model || "qwen/qwen-image-3", prompt };
+  // size caps the resolution so the returned base64 stays small — a full-res
+  // image can be a multi-hundred-KB blob that gets truncated mid-transfer,
+  // which then blows up JSON.parse below with "Unterminated string in JSON".
+  // response_format:"url" is preferred when the provider supports it: the JSON
+  // then carries a short URL instead of a giant base64 payload.
+  const body = {
+    model: model || "qwen/qwen-image-3",
+    prompt,
+    size: size || "512x512",
+    response_format: "url"
+  };
   const res = await fetch("https://openrouter.ai/api/v1/images", {
     method: "POST",
     headers: {
@@ -926,7 +942,16 @@ async function callImage({ model, prompt }) {
   });
   const raw = await res.text();
   if (!res.ok) throw new Error("OpenRouter images " + res.status + ": " + raw.slice(0, 300));
-  const json = JSON.parse(raw);
+  let json;
+  try {
+    json = JSON.parse(raw);
+  } catch (e) {
+    // Almost always a truncated response: the body ended mid-string. Surface a
+    // clear, actionable message instead of the raw parser error.
+    throw new Error(
+      `Image response was truncated/invalid JSON (${raw.length} chars received). ` +
+      `Try a smaller resolution or run it again. [${e.message}]`);
+  }
   // tolerate a few shapes: {data:[{b64_json,media_type}|{url}]} or message.images
   const imgs = [];
   (json.data || []).forEach(d => {
@@ -1272,7 +1297,7 @@ async function run() {
       try {
         const style = (cfg.image.style || "").trim();
         const prompt = (style ? style + "\n\n" : "") + task;
-        const r = await callImage({ model: cfg.image.model, prompt });
+        const r = await callImage({ model: cfg.image.model, prompt, size: cfg.image.size });
         const cleanReceived = stripB64(r.received);
         logStep("image", { sent: r.sent, received: cleanReceived }, { images: r.images.length });
         b.querySelector(".spin-wrap").innerHTML = "";
@@ -1413,7 +1438,7 @@ function snapshotSetup() {
     resp:  { system: $("p-resp").value,  model: m("m-resp"),  temp: t("t-resp") },
     data:  { system: $("p-data").value,  model: m("m-data"),  temp: t("t-data"), urls: getUrls() },
     coder: { system: $("p-coder").value, model: m("m-coder"), temp: t("t-coder") },
-    image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3") },
+    image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3"), size: ($("s-image") ? $("s-image").value : "512x512") },
     critic:{ system: $("p-critic").value, model: m("m-critic"), temp: t("t-critic") },
     voice: { system: $("p-voice").value, model: m("m-voice"), temp: t("t-voice") },
     connected: new Set(connectedKeys())
