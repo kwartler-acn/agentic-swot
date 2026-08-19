@@ -520,8 +520,8 @@
       <div class="body">
         <label class="fld">Connected data sources <span class="fixed-tag">fixed</span></label>
         <div class="data-sources">
-          <a href="https://example.com/about" target="_blank" rel="noopener">example.com — Sample source A ↗</a>
-          <a href="https://example.com/wiki" target="_blank" rel="noopener">example.com — Sample source B ↗</a>
+          <a href="https://www.accenture.com/us-en/about/company-index" target="_blank" rel="noopener">accenture.com — About Accenture ↗</a>
+          <a href="https://en.wikipedia.org/wiki/Accenture" target="_blank" rel="noopener">Wikipedia — Accenture ↗</a>
         </div>
         <div class="url-help">
           The application has an embedded snapshot of these data sources.
@@ -657,7 +657,7 @@
         Paste your OpenRouter key, connect and write your agent prompts, then
         click <b>save agentic setup</b> (bottom-left) to lock it in.<br>
         That unlocks this chat — type a task below and hit <b>▶ run</b>.<br>
-        The data connector is wired to two <b>sample sources</b> you can swap for your own.<br><br>
+        The data connector is wired to two <b>Accenture</b> sources.<br><br>
         Watch the orchestrator plan, then each agent's block streams in its own color.<br>
         <span style="color:var(--data)">lime</span> = your data → Strengths &amp; Weaknesses &nbsp;·&nbsp;
         <span style="color:var(--resp)">cyan</span> = live web → Opportunities &amp; Threats &nbsp;·&nbsp;
@@ -667,7 +667,7 @@
     </div>
     <div class="memchip" id="memChip" hidden><span>🧠</span> remembering only the last result</div>
     <div class="composer">
-      <input type="text" id="taskInput" placeholder="Build a SWOT for your chosen subject" />
+      <input type="text" id="taskInput" placeholder="Build a SWOT for Accenture" />
       <button id="sendBtn">▶ run</button>
     </div>
   </section>
@@ -783,24 +783,21 @@ function loadState() {
   $("taskInput").disabled = true; $("sendBtn").disabled = true;
 }
 
-/* ---- data connector: fixed sample sources -------------------------
-   For this exercise the connector is hard-wired to two sample sources and
-   students can't add/remove them. Swap these URLs (and the matching
-   DATA_SNAPSHOTS entries below) for your own subject. getUrls() just
-   returns that list. */
+/* ---- data connector: fixed Accenture sources ----------------------
+   For this exercise the connector is hard-wired to two Accenture sources
+   and students can't add/remove them. getUrls() just returns that list. */
 const DATA_SOURCES = [
-  "https://example.com/about",
-  "https://example.com/wiki"
+  "https://www.accenture.com/us-en/about/company-index",
+  "https://en.wikipedia.org/wiki/Accenture"
 ];
 function getUrls() { return [...DATA_SOURCES]; }
 
-/* Embedded snapshots of the two sample sources, so the data connector works
-   offline with no network / CORS dependency. Keyed by the exact URL in
-   DATA_SOURCES. Replace this placeholder text with a snapshot of whatever
-   subject you want the exercise to analyze. */
+/* Embedded snapshots of the two Accenture sources, captured so the data
+   connector works offline with no network / CORS dependency.
+   Keyed by the exact URL in DATA_SOURCES. */
 const DATA_SNAPSHOTS = {
-  "https://example.com/about": "About [Your Subject]\n\nThis is placeholder source text for the data connector. Replace it with a snapshot of the organization, product, or topic you want the class to analyze.\n\nThe data connector reads from these embedded snapshots (not the live web), so the app runs entirely offline with no network or CORS dependency. Paste a few paragraphs of factual background here — the data agent will mine it for Strengths and Weaknesses.\n\n(Sample snapshot — replace with your own content.)",
-  "https://example.com/wiki": "[Your Subject] — reference overview\n\nThis is a second placeholder snapshot. Replace it with additional background on your chosen subject — history, scale, key facts, structure, and so on.\n\nProvide concrete, factual detail here so the data agent has something substantive to ground its analysis in. The richer the snapshot, the better the resulting SWOT.\n\n(Sample snapshot — replace with your own content.)"
+  "https://www.accenture.com/us-en/about/company-index": "About Accenture\n\nAccenture is a leading global professional services company that helps the world's businesses, governments and other organizations build their digital core, optimize their operations, accelerate revenue growth and enhance citizen services — creating tangible value at speed and scale. We are a talent- and innovation-led company, positioning ourselves as \"the reinvention partner of choice.\"\n\nWith approximately 799,000 employees worldwide, we serve 9,000+ clients across more than 120 countries, operating in 52 countries and 200+ cities. Our services and solutions span Strategy & Consulting, Technology, Operations, Industry X and Accenture Song, and reach across cloud, artificial intelligence, cybersecurity, digital engineering and sustainability. We serve clients in industries ranging from banking, insurance and retail to aerospace, health and the public sector.\n\nOur people embrace change and create 360° value — delivering benefits for clients, our own people, shareholders, partners and communities. Innovation is a mindset, hardwired into everything we do, supported by an ecosystem of 350+ partners. We emphasize responsible AI, inclusion and diversity, and corporate sustainability.\n\nAccenture ranks first on Fortune's World's Most Admired Companies list and among the top firms on Great Place to Work's Best Workplaces rankings.\n\n(Snapshot captured from https://www.accenture.com/us-en/about/company-index)",
+  "https://en.wikipedia.org/wiki/Accenture": "Accenture plc is an Irish-domiciled multinational professional services company that specializes in information technology (IT) services and management consulting. Headquartered in Dublin, Ireland, the firm operates across more than 120 countries.\n\nAccenture began as the business and technology consulting division of accounting firm Arthur Andersen in the early 1950s. The division conducted a feasibility study for General Electric that led to the installation of what is believed to be the first commercial use of a computer in the United States. In 1989 the consulting unit separated from Arthur Andersen to become part of Andersen Worldwide as Andersen Consulting. Following arbitration in 2000, Andersen Consulting severed ties with Arthur Andersen and adopted the name Accenture on January 1, 2001. The company went public on July 19, 2001, with an IPO priced at $14.50 per share, and in 2009 relocated its incorporation from Bermuda to Ireland.\n\nAs of 2025, Accenture employs approximately 779,000 people and generated revenue of $69.67 billion with net income of $7.83 billion. The organization is structured into five business segments: Strategy & Consulting, Technology, Operations, Accenture Song (formerly Interactive), and Industry X. As of January 2026 the company ranked 211th on Fortune's Global 500 list. Since 2013 it has acquired over 200 companies.\n\nJulie Sweet serves as chair and CEO, having assumed the role in 2019.\n\n(Snapshot captured from https://en.wikipedia.org/wiki/Accenture)"
 };
 function saveField(id) {
   if (EPHEMERAL.has(id)) return;              // system prompts + preset never persist
