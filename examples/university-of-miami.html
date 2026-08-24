@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agentic-SWOT — University of Miami edition</title>
+<style>
+  /* ---- University of Miami light system -------------------------------
+     Clean white canvas in the University of Miami palette — UM Green
+     (#005030) as the primary and UM Orange (#F47321) as the accent — with
+     a distinct, print-friendly hue per worker so each agent still reads as
+     its own color across the whole UI. */
+  :root {
+    --bg:        #ffffff;   /* page canvas */
+    --panel:     #f7f8f6;   /* pane · soft off-white */
+    --card:      #ffffff;   /* card surface */
+    --card-2:    #f3f5f2;   /* inset (inputs) */
+    --border:    rgba(0,80,48,.14);
+    --border-hi: rgba(0,80,48,.30);
+    --fg:        #16211b;
+    --fg-dim:    #4c5a52;
+    --fg-faint:  #869089;
+
+    --slime:     #005030;   /* primary accent · UM Green */
+    --slime-dim: #003d24;   /* darker green */
+    --slime-hi:  #00693e;   /* lighter green · hover */
+    --ok:        #007a3d;   /* ready indicator · green (on-white) */
+
+    /* agent palette — one distinct, on-white hue per worker */
+    --orch:  #005030;       /* orchestrator  · UM Green   */
+    --resp:  #0062a9;       /* researcher    · blue       */
+    --data:  #F47321;       /* data connector· UM Orange  */
+    --coder: #6a3fbf;       /* coder         · violet     */
+    --image: #c2185b;       /* image         · magenta    */
+    --critic:#9e1b32;       /* critic        · maroon     */
+    --voice: #b8531a;       /* brand voice   · burnt orange */
+
+    --radius: 7px;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--slime); color: #fff; }
+  a { color: var(--slime); }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+
+  /* ---- top bar -------------------------------------------------------- */
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 2px solid var(--slime);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--slime) 16%, var(--panel)), var(--panel));
+  }
+  header .logo {
+    display: flex; align-items: center; gap: 9px;
+    color: var(--fg); font-weight: 500; font-family: var(--mono); font-size: 13px;
+  }
+  header .logo .u { color: var(--slime); }
+  header .logo .a { color: var(--data); }
+  header .logo::before {
+    content: ""; width: 14px; height: 14px; border-radius: 4px;
+    background: linear-gradient(135deg, var(--slime) 55%, var(--data) 55%);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--slime) 16%, transparent);
+  }
+  header .sub { color: var(--fg-faint); font-size: 12px; }
+  header .spacer { flex: 1; }
+  header .hint { color: var(--fg-faint); font-size: 11px; }
+
+  /* header left cluster — sized to the setup pane so the toggle
+     lands on the vertical divider */
+  .hleft { display: flex; align-items: center; gap: 10px; width: 424px; flex: none; }
+  .hleft .navtoggle { margin-left: auto; }
+
+  /* nav / collapse toggle — bright lime so it stands out */
+  .navtoggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; padding: 0; flex: none;
+    background: var(--slime); color: #fff;
+    border: none; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: background .12s;
+  }
+  .navtoggle:hover { background: var(--slime-hi); }
+
+  /* ---- layout --------------------------------------------------------- */
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    gap: 1px;
+    background: var(--border);
+    height: calc(100vh - 45px);
+    transition: grid-template-columns .22s ease, gap .22s ease;
+  }
+  .pane { background: var(--bg); overflow-y: auto; padding: 16px; }
+  #canvas { overflow-x: hidden; transition: opacity .15s ease; }
+
+  /* focus mode: setup panel collapsed, chat runs the show */
+  body.canvas-collapsed main { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
+  body.canvas-collapsed #canvas { opacity: 0; pointer-events: none; }
+
+  .pane-label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--fg-faint); margin: 0 0 14px;
+  }
+  .pane-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--slime); }
+
+  /* ---- agent cards — full colored edge, no left bar ------------------- */
+  .card {
+    background: var(--card);
+    border: 1px solid color-mix(in srgb, var(--acc, #fff) 34%, var(--border));
+    border-radius: var(--radius);
+    margin-bottom: 11px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.02);
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: color-mix(in srgb, var(--acc, #fff) 60%, transparent); }
+  .card > .head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; cursor: pointer; user-select: none;
+  }
+  .card .tag {
+    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--acc, var(--fg));
+  }
+  .card .role { color: var(--fg-faint); font-size: 11px; }
+  .card .head .spacer { flex: 1; }
+  .card .status {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--fg-faint); flex: none;
+  }
+  .card .status.ok  { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent); }
+  .card .caret { color: var(--fg-faint); font-size: 11px; transition: transform .15s; }
+  .card.collapsed .caret { transform: rotate(-90deg); }
+  .card.collapsed > .body { display: none; }
+  .card > .body { padding: 0 12px 12px; }
+
+  label.fld { display: block; font-size: 11px; color: var(--fg-dim); margin: 9px 0 5px; }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--card-2);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 9px;
+    font-family: var(--mono);
+    font-size: 12px;
+    resize: vertical;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input::placeholder, textarea::placeholder { color: var(--fg-faint); }
+  input:hover, textarea:hover, select:hover { border-color: var(--border-hi); }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--slime);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--slime) 16%, transparent);
+  }
+  textarea { min-height: 60px; line-height: 1.55; }
+
+  /* checkboxes are not full-width text fields */
+  input[type="checkbox"] {
+    width: auto; height: auto; padding: 0; margin: 0; flex: none;
+    accent-color: var(--slime); cursor: pointer;
+  }
+  input[type="checkbox"]:focus { box-shadow: none; }
+
+  /* fixed / read-only fields (e.g. the image model) */
+  input[readonly] { color: var(--fg-dim); cursor: default; background: var(--bg); }
+  input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-shadow: none; }
+  .fixed-tag {
+    font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint);
+    border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; margin-left: 6px;
+  }
+
+  /* connector box — wire worker agents to the orchestrator */
+  .conn { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 12px; color: var(--fg); cursor: pointer; }
+  .conn .swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--fg-faint)); flex: none; }
+  .conn .r { color: var(--fg-faint); font-size: 11px; margin-left: auto; }
+  .conn-note { font-size: 10.5px; color: var(--fg-faint); margin-top: 8px; line-height: 1.55; }
+
+  .adv-toggle {
+    margin-top: 10px; font-size: 11px; color: var(--fg-faint);
+    cursor: pointer; user-select: none;
+  }
+  .adv-toggle:hover { color: var(--slime); }
+  .adv { display: none; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .adv.open { display: block; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .range-out { color: var(--slime); font-size: 11px; font-family: var(--mono); }
+
+  /* run button */
+  .runbar { position: sticky; bottom: 0; padding-top: 12px; }
+  button.run {
+    width: 100%;
+    background: var(--slime); color: #fff;
+    border: none; border-radius: 6px;
+    padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: .01em; cursor: pointer; transition: background .12s;
+  }
+  button.run:hover { background: var(--slime-hi); }
+  button.run:disabled { background: var(--card-2); color: var(--fg-faint); cursor: not-allowed; }
+
+  /* save / lock agentic setup */
+  .savebar { position: sticky; bottom: 0; padding-top: 12px; background: var(--bg); }
+  button.save {
+    width: 100%; background: var(--slime); color: #fff; border: 1px solid transparent;
+    border-radius: 6px; padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .12s, color .12s, border-color .12s;
+  }
+  button.save:hover { background: var(--slime-hi); }
+  button.save.saved { background: var(--card-2); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+  .save-note { font-size: 10.5px; color: var(--fg-faint); text-align: center; margin-top: 7px; }
+  .save-note.dirty { color: var(--slime); }
+
+  /* inline agent hint (e.g. orchestrator JSON nudge) */
+  .agent-hint { font-size: 10.5px; color: var(--fg-faint); margin-top: 7px; line-height: 1.55; }
+  .agent-hint b { color: var(--fg); font-weight: 500; }
+  .agent-hint code { font-size: 10px; }
+
+  /* informational callout (e.g. Human Review Surface) */
+  .callout { background: var(--card-2); border: 1px solid color-mix(in srgb, var(--slime) 30%, var(--border)); border-radius: 6px; padding: 9px 11px; margin-bottom: 11px; }
+  .callout h5 { margin: 0 0 4px; font-size: 11px; font-weight: 500; color: var(--slime); letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
+  .callout p { margin: 0; font-size: 11px; color: var(--fg-dim); line-height: 1.6; }
+  .callout p b { color: var(--fg); font-weight: 500; }
+
+  /* ---- chat / trace --------------------------------------------------- */
+  #trace { display: flex; flex-direction: column; gap: 11px; padding-bottom: 12px; }
+
+  .msg.user {
+    align-self: flex-end; max-width: 82%;
+    background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 10px 10px 4px 10px; padding: 9px 12px; color: var(--fg);
+  }
+
+  .block {
+    background: var(--card);
+    border: 1px solid color-mix(in srgb, var(--acc, #fff) 32%, var(--border));
+    border-radius: var(--radius);
+    padding: 11px 13px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.02);
+  }
+  .block .bhead {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--acc); margin-bottom: 7px;
+  }
+  .block .bhead .badge {
+    color: var(--fg-faint); font-weight: 400; letter-spacing: 0; text-transform: none; font-family: var(--mono);
+  }
+  .block .bhead .spin { margin-left: auto; }
+  .block .content { white-space: pre-wrap; color: var(--fg); font-size: 12.5px; line-height: 1.62; }
+  .block .content.dim { color: var(--fg-dim); }
+  img.genimg { display: block; max-width: 100%; border-radius: 8px; margin-top: 9px; border: 1px solid var(--border); }
+
+  /* copyable code blocks in agent output */
+  .codebox { margin: 9px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .codebar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 5px 8px; background: var(--card-2); border-bottom: 1px solid var(--border); }
+  .codelang { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint); font-family: var(--mono); }
+  .codecopy { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: 10px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
+  .codecopy:hover { color: var(--slime); border-color: color-mix(in srgb, var(--slime) 55%, transparent); }
+  .codebox pre { margin: 0; padding: 10px; background: #f5f7f4; font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--fg); overflow-x: auto; max-height: 340px; }
+  .codebox pre[hidden] { display: none; }
+
+  /* code / preview toggle for HTML output */
+  .codetoggle { flex: none; display: flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .codetoggle button {
+    background: transparent; border: none; color: var(--fg-faint);
+    font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+    padding: 3px 10px; cursor: pointer; font-family: var(--sans); transition: background .12s, color .12s;
+  }
+  .codetoggle button + button { border-left: 1px solid var(--border); }
+  .codetoggle button:hover { color: var(--fg); }
+  .codetoggle button.active { background: var(--slime); color: #fff; }
+  /* rendered HTML preview — white canvas so pages show as authored */
+  .codepreview { display: block; width: 100%; height: 360px; border: 0; background: #fff; }
+  .codepreview[hidden] { display: none; }
+
+  /* memory indicator */
+  .memchip { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--fg-faint); margin-top: 10px; }
+  .memchip[hidden] { display: none; }
+
+  .planlist { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+  .planlist li { padding: 2px 0; color: var(--fg-dim); }
+  .planlist li .mk { color: var(--fg-faint); }
+  .planlist li.done .mk { color: var(--ok); }
+  .planlist li.active { color: var(--fg); }
+
+  /* the two source blocks side by side */
+  .sources { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* final SWOT quadrants */
+  .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 9px; }
+  .quad { border: 1px solid var(--border); border-radius: 6px; padding: 9px; background: var(--card-2); }
+  .quad h4 { margin: 0 0 5px; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; font-weight: 500; }
+  .quad.s h4, .quad.w h4 { color: var(--data); }
+  .quad.o h4, .quad.t h4 { color: var(--resp); }
+  .quad ul { margin: 0; padding-left: 15px; color: var(--fg); font-size: 11.5px; line-height: 1.55; }
+
+  /* researcher citations */
+  .cites { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .cites-h { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--resp); margin-bottom: 5px; }
+  a.cite {
+    display: block; font-size: 11px; color: var(--fg-dim); text-decoration: none;
+    padding: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  a.cite:hover { color: var(--slime); }
+  a.cite .n { color: var(--resp); margin-right: 4px; font-family: var(--mono); }
+
+  /* data-connector dynamic URL rows */
+  .url-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .url-row input { flex: 1; }
+  button.url-x {
+    flex: none; width: 34px; background: var(--card-2); color: var(--fg-faint);
+    border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: var(--sans);
+    transition: color .12s, border-color .12s;
+  }
+  button.url-x:hover { color: var(--voice); border-color: color-mix(in srgb, var(--voice) 55%, transparent); }
+  button.addurl {
+    margin-top: 2px; background: transparent; color: var(--fg-faint);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 11px;
+    font-family: var(--sans); font-size: 11px; cursor: pointer; transition: color .12s, border-color .12s;
+  }
+  button.addurl:hover { color: var(--slime); border-color: color-mix(in srgb, var(--slime) 55%, transparent); }
+  .url-help { font-size: 10.5px; color: var(--fg-faint); margin-top: 9px; line-height: 1.55; }
+  .url-help a { color: var(--resp); }
+  .url-help b { color: var(--fg); font-weight: 500; }
+
+  /* data-connector fixed sources — clickable, read-only list */
+  .data-sources { display: flex; flex-direction: column; gap: 6px; }
+  .data-sources a {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--data); text-decoration: none; transition: border-color .12s, color .12s;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .data-sources a::before {
+    content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--data); flex: none;
+  }
+  .data-sources a:hover { border-color: color-mix(in srgb, var(--data) 55%, transparent); color: var(--fg); }
+
+  /* brand-voice editorial-guidelines link — revealed only when the UM
+     editorial-guidelines preset is selected */
+  a.voice-guidelines {
+    display: flex; align-items: center; gap: 8px; margin-top: 9px;
+    background: var(--card-2); border: 1px solid color-mix(in srgb, var(--voice) 40%, var(--border));
+    border-radius: 6px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--voice); text-decoration: none; transition: border-color .12s, color .12s;
+  }
+  a.voice-guidelines:hover { border-color: var(--voice); color: var(--slime); }
+  a.voice-guidelines[hidden] { display: none; }
+
+  /* export-run bar */
+  .exportbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  button.exp {
+    background: var(--slime); color: #fff; border: none; border-radius: 6px;
+    padding: 8px 13px; font-family: var(--sans); font-weight: 500; font-size: 12px; cursor: pointer;
+    transition: background .12s;
+  }
+  button.exp:hover { background: var(--slime-hi); }
+  button.exp.ghost { background: var(--card-2); color: var(--fg); border: 1px solid var(--border-hi); }
+  button.exp.ghost:hover { border-color: color-mix(in srgb, var(--slime) 55%, transparent); color: var(--slime); }
+  .exp-note { color: var(--fg-faint); font-size: 11px; }
+
+  .inspect { margin-top: 9px; }
+  .inspect summary {
+    cursor: pointer; font-size: 10px; color: var(--fg-faint);
+    list-style: none; user-select: none;
+  }
+  .inspect summary::before { content: "⟩ "; color: var(--acc); }
+  .inspect[open] summary::before { content: "⟨ "; }
+  .inspect summary:hover { color: var(--slime); }
+  .inspect pre {
+    margin: 7px 0 0; background: #f5f7f4; border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px; font-size: 10.5px; color: var(--fg-dim);
+    font-family: var(--mono); overflow-x: auto; max-height: 240px;
+  }
+
+  .err { border-color: #f7768e !important; }
+  .err .bhead { color: #f7768e; }
+
+  /* chat input */
+  .composer { display: flex; gap: 8px; margin-top: 10px; position: sticky; bottom: 0; background: var(--bg); padding-top: 10px; }
+  .composer input { flex: 1; }
+  .composer button {
+    background: var(--slime); color: #fff; border: none;
+    border-radius: 6px; padding: 0 18px; font-family: var(--sans); font-weight: 500; cursor: pointer;
+    transition: background .12s;
+  }
+  .composer button:hover { background: var(--slime-hi); }
+  .composer button:disabled { background: var(--card-2); color: var(--fg-faint); cursor: not-allowed; }
+
+  .spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--border-hi);
+    border-top-color: var(--acc); border-radius: 50%; animation: sp .7s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  code { color: var(--slime); background: var(--card-2); padding: 1px 5px; border-radius: 4px; font-size: 11px; font-family: var(--mono); }
+  .empty { color: var(--fg-faint); font-size: 12px; padding: 22px 4px; line-height: 1.7; }
+  .empty b { color: var(--fg); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hleft">
+    <span class="logo"><span class="u">Agentic</span>::<span class="a">SWOT</span></span>
+    <span class="sub">University of Miami · agent orchestration playground</span>
+    <button class="navtoggle" id="toggleCanvas" title="Collapse setup panel" aria-label="Toggle setup panel"><span class="navtoggle-ico">⟨</span></button>
+  </div>
+  <span class="spacer"></span>
+  <span class="hint" id="keyhint">no api key set</span>
+</header>
+
+<main>
+  <!-- ============ LEFT: CANVAS ============ -->
+  <section class="pane" id="canvas">
+    <p class="pane-label"><span class="dot"></span> canvas · build your system</p>
+
+    <!-- Connection -->
+    <div class="card" id="c-conn" style="--acc: var(--slime)">
+      <div class="head" data-toggle>
+        <span class="tag">LLM gateway</span>
+        <span class="role">openrouter</span>
+        <span class="spacer"></span>
+        <span class="status" id="st-conn"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">OpenRouter API key <span style="color:var(--fg-faint)">(stored in this browser only)</span></label>
+        <input type="password" id="apiKey" placeholder="sk-or-v1-…" autocomplete="off" />
+        <label class="fld">Default model</label>
+        <input type="text" id="defaultModel" value="google/gemini-3.5-flash-lite" />
+      </div>
+    </div>
+
+    <!-- Orchestrator -->
+    <div class="card" id="c-orch" style="--acc: var(--orch)">
+      <div class="head" data-toggle>
+        <span class="tag">orchestrator</span>
+        <span class="role">plans · delegates</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <div class="callout">
+          <h5><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></svg> Human Review Surface</h5>
+          <p>By design, agents run <b>one hop per turn</b> and hand their results back to <b>you</b> for review. Other systems can have higher automation.</p>
+        </div>
+        <label class="fld">System prompt</label>
+        <textarea id="p-orch"></textarea>
+        <label class="fld">planner model</label>
+        <select id="m-orch">
+          <option value="openai/gpt-5.4-nano" selected>openai/gpt-5.4-nano · strict JSON</option>
+          <option value="google/gemini-3.5-flash-lite">google/gemini-3.5-flash-lite · best-effort</option>
+        </select>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <label class="fld">temp <span class="range-out" id="to-orch">0.3</span></label>
+          <input type="range" id="t-orch" min="0" max="1" step="0.1" value="0.3">
+        </div>
+      </div>
+    </div>
+
+    <!-- Connections -->
+    <div class="card" id="c-connect" style="--acc: var(--slime)">
+      <div class="head" data-toggle>
+        <span class="tag">connections</span>
+        <span class="role">wire agents → orchestrator</span>
+        <span class="spacer"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="conn"><input type="checkbox" id="conn-research" checked /><span class="swatch" style="--c: var(--resp)"></span>researcher<span class="r">live web</span></label>
+        <label class="conn"><input type="checkbox" id="conn-data" checked /><span class="swatch" style="--c: var(--data)"></span>data connector<span class="r">your data</span></label>
+        <label class="conn"><input type="checkbox" id="conn-coder" /><span class="swatch" style="--c: var(--coder)"></span>coder<span class="r">code tasks</span></label>
+        <label class="conn"><input type="checkbox" id="conn-image" /><span class="swatch" style="--c: var(--image)"></span>image<span class="r">generate visual</span></label>
+        <label class="conn"><input type="checkbox" id="conn-critic" /><span class="swatch" style="--c: var(--critic)"></span>critic<span class="r">reviews the report</span></label>
+        <div class="conn-note">Checked agents get described in the orchestrator's system prompt so it knows it can delegate to them.</div>
+      </div>
+    </div>
+
+    <!-- Researcher -->
+    <div class="card" id="c-resp" style="--acc: var(--resp)">
+      <div class="head" data-toggle>
+        <span class="tag">researcher</span>
+        <span class="role">live web</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">System prompt</label>
+        <textarea id="p-resp"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">web-capable model</label><input type="text" id="m-resp" value="perplexity/sonar"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-resp">0.4</span></label><input type="range" id="t-resp" min="0" max="1" step="0.1" value="0.4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data connector -->
+    <div class="card" id="c-data" style="--acc: var(--data)">
+      <div class="head" data-toggle>
+        <span class="tag">data connector</span>
+        <span class="role">your data</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">Connected data sources <span class="fixed-tag">fixed</span></label>
+        <div class="data-sources">
+          <a href="https://people.miami.edu/executive-leadership/index.html" target="_blank" rel="noopener">people.miami.edu — Executive Leadership ↗</a>
+          <a href="https://news.miami.edu/stories/2025/07/university-of-miami-gets-a-new-provost.html" target="_blank" rel="noopener">news.miami.edu — University of Miami Gets a New Provost ↗</a>
+          <a href="https://ai.it.miami.edu/" target="_blank" rel="noopener">ai.it.miami.edu — AI at the University of Miami ↗</a>
+          <a href="https://welcome.miami.edu/about-um/index.html" target="_blank" rel="noopener">welcome.miami.edu — About the University of Miami ↗</a>
+        </div>
+        <div class="url-help">
+          The application has an embedded snapshot of these University of Miami data sources.
+        </div>
+        <label class="fld">System prompt</label>
+        <textarea id="p-data"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-data" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-data">0.1</span></label><input type="range" id="t-data" min="0" max="1" step="0.1" value="0.1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coder -->
+    <div class="card" id="c-coder" style="--acc: var(--coder)">
+      <div class="head" data-toggle>
+        <span class="tag">coder</span>
+        <span class="role">code tasks</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">System prompt</label>
+        <textarea id="p-coder"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-coder" value="moonshotai/kimi-k2.7-code"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-coder">0.2</span></label><input type="range" id="t-coder" min="0" max="1" step="0.1" value="0.2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image -->
+    <div class="card" id="c-image" style="--acc: var(--image)">
+      <div class="head" data-toggle>
+        <span class="tag">image</span>
+        <span class="role">generate visual</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">Style prompt <span style="color:var(--fg-faint)">(optional — prepended to the request)</span></label>
+        <textarea id="p-image" placeholder="e.g. minimalist flat vector illustration, muted palette"></textarea>
+        <label class="fld">model <span class="fixed-tag">fixed</span></label>
+        <input type="text" id="m-image" value="qwen/qwen-image-3" readonly title="This model is fixed for the exercise" />
+        <label class="fld">resolution <span style="color:var(--fg-faint)">(smaller = smaller payload, faster)</span></label>
+        <select id="s-image">
+          <option value="512x512" selected>512 × 512 · small</option>
+          <option value="768x768">768 × 768 · medium</option>
+          <option value="1024x1024">1024 × 1024 · large</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Critic -->
+    <div class="card" id="c-critic" style="--acc: var(--critic)">
+      <div class="head" data-toggle>
+        <span class="tag">critic</span>
+        <span class="role">reviews the report</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <div class="agent-hint">The critic evaluates the draft SWOT against the source findings.</div>
+        <label class="fld">Critic preset</label>
+        <select id="criticPreset">
+          <option value="">— write your own below, or pick a preset —</option>
+          <option value="provost">Seasoned academic provost</option>
+          <option value="grounding">Rigorous grounding critic</option>
+          <option value="devils">Strategic devil's advocate</option>
+          <option value="gate">Quick quality gate</option>
+        </select>
+        <label class="fld">System prompt</label>
+        <textarea id="p-critic" placeholder="e.g. You are the CRITIC. Review the draft SWOT against the source findings…"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-critic" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-critic">0.2</span></label><input type="range" id="t-critic" min="0" max="1" step="0.1" value="0.2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brand voice -->
+    <div class="card" id="c-voice" style="--acc: var(--voice)">
+      <div class="head" data-toggle>
+        <span class="tag">brand voice</span>
+        <span class="role">final rewrite</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">Voice preset</label>
+        <select id="voicePreset">
+          <option value="">— write your own below, or pick a preset —</option>
+          <option value="umiami-editorial">University of Miami editorial guidelines</option>
+          <option value="a swashbuckling pirate — say ahoy, yer, matey, nautical metaphors">Pirate</option>
+          <option value="overly consultant-speak — dense corporate jargon like 'synergies', 'leverage core competencies', 'circle back', 'move the needle', 'value-add', 'boil the ocean', 'at the end of the day'; buzzword-heavy but keep every fact intact">Overly consultant speak</option>
+          <option value="an extremely online Gen-Z creator — lowercase, slang, but still accurate">Gen-Z</option>
+          <option value="Shakespearean English — thee, thou, iambic flourish">Shakespeare</option>
+        </select>
+        <a class="voice-guidelines" id="voiceGuidelines" href="https://ucomm.miami.edu/tools-and-resources/editorial-guidelines/index.html" target="_blank" rel="noopener" hidden>↗ Open the University of Miami Editorial Guidelines</a>
+        <label class="fld">System prompt</label>
+        <textarea id="p-voice"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-voice" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-voice">0.8</span></label><input type="range" id="t-voice" min="0" max="1" step="0.1" value="0.8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="savebar">
+      <button class="save" id="saveBtn">save agentic setup</button>
+      <div class="save-note" id="saveNote">the chat unlocks once you save your setup</div>
+    </div>
+  </section>
+
+  <!-- ============ RIGHT: CHAT ============ -->
+  <section class="pane" id="chat">
+    <p class="pane-label"><span class="dot"></span> chat · run + watch</p>
+    <div id="trace">
+      <div class="empty">
+        Paste your OpenRouter key, connect and write your agent prompts, then
+        click <b>save agentic setup</b> (bottom-left) to lock it in.<br>
+        That unlocks this chat — type a task below and hit <b>▶ run</b>.<br>
+        The data connector is wired to four <b>University of Miami</b> sources.<br><br>
+        Watch the orchestrator plan, then each agent's block streams in its own color.<br>
+        <span style="color:var(--data)">orange</span> = your data → Strengths &amp; Weaknesses &nbsp;·&nbsp;
+        <span style="color:var(--resp)">blue</span> = live web → Opportunities &amp; Threats &nbsp;·&nbsp;
+        <span style="color:var(--critic)">maroon</span> = critic review &nbsp;·&nbsp;
+        <span style="color:var(--voice)">orange-brown</span> = brand voice.
+      </div>
+    </div>
+    <div class="memchip" id="memChip" hidden><span>🧠</span> remembering only the last result</div>
+    <div class="composer">
+      <input type="text" id="taskInput" placeholder="Build a SWOT for the University of Miami" />
+      <button id="sendBtn">▶ run</button>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   Agentic-SWOT — single-file agent orchestration teaching tool.
+   No backend. All model calls go straight to OpenRouter from the browser.
+   Read top to bottom; it's meant to be learned from.
+   ===================================================================== */
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+/* ---- defaults ------------------------------------------------------
+   Most system prompts are intentionally BLANK — students write them.
+   The coder ships an overwritable starter prompt so students can see
+   what a good agent prompt looks like. Non-prompt scaffolding
+   (model ids, the data URL) is pre-filled. */
+const DEFAULTS = {
+  "p-coder":
+`You are the CODER agent. You write clean, correct, well-commented code to
+accomplish the user's request.
+- Choose the most appropriate language unless the task specifies one.
+- Start with a one-line summary of your approach, then the code in a single
+  fenced block.
+- After the code, add a short "Notes" list: key assumptions, edge cases you
+  handled, and how to run or test it.
+- If the task is not actually a coding task, say so briefly instead of
+  inventing code.`,
+
+  "defaultModel": "google/gemini-3.5-flash-lite",
+  "m-orch": "openai/gpt-5.4-nano",
+  "m-resp": "perplexity/sonar",
+  "m-coder": "moonshotai/kimi-k2.7-code",
+  "m-image": "qwen/qwen-image-3"
+};
+
+/* Used ONLY by the brand-voice preset dropdown to scaffold a prompt.
+   Not seeded into the textarea on load, so the field starts blank. */
+const VOICE_TEMPLATE =
+`You are the BRAND VOICE editor. Rewrite the report entirely in the voice of {VOICE}.
+Keep every fact and all four SWOT sections (Strengths, Weaknesses, Opportunities,
+Threats) intact. Change only the tone, never the content.`;
+
+/* Full brand-voice system prompts that DON'T use the persona template above.
+   The University of Miami editorial-guidelines voice is a real house style, so
+   it ships as a complete prompt (and its dropdown option reveals a link to the
+   official guidelines). */
+const VOICE_PRESETS = {
+  "umiami-editorial":
+`You are the BRAND VOICE editor applying the University of Miami's official
+editorial style. Rewrite the report in a clear, concise, professional, and
+confident institutional voice suitable for University leadership and external
+audiences. Keep every fact and all four SWOT sections (Strengths, Weaknesses,
+Opportunities, Threats) intact, and preserve any [n] citation markers — change
+only the wording and tone, never the content.
+
+Follow the University of Miami editorial guidelines (which build on the AP
+Stylebook and Merriam-Webster, with University-specific rules taking precedence):
+- Write in active voice; prefer strong verbs and cut wordiness and redundancy.
+- Spell out "University of Miami" on first reference; refer to it as "the
+  University" (capital U) afterward. Never abbreviate it as "UM," "U.M.," or
+  "UMiami."
+- Capitalize official unit names but lowercase generic references (e.g.,
+  "College of Arts and Sciences" but "the college").
+- Use full names for schools and colleges on first reference; approved short
+  forms are allowed afterward.
+- Refer to athletics teams as the "Hurricanes" or "Canes" (no apostrophe).
+- Use "first-year student," not "freshman."
+- Use em dashes with no surrounding spaces; avoid the Oxford comma in a simple
+  series; keep parallel structure and consistent verb tense.
+Do NOT output HTML, code, or a full web page — a later coder step handles any
+rendering.`
+};
+
+/* Example critic system prompts for the dropdown. Like the brand-voice presets,
+   these SCAFFOLD the (otherwise blank) prompt — students can edit them freely. */
+const CRITIC_PRESETS = {
+  provost:
+`You are the CRITIC agent, reviewing a draft SWOT in the persona of a seasoned
+academic provost at a major private research university — modeled on Joel Samuels,
+Executive Vice President for Academic Affairs and Provost of the University of Miami.
+Your background: a tenured law professor and rule-of-law scholar (A.B. in Politics,
+Princeton; J.D. and M.A. in Russian and East European Studies, University of Michigan)
+who served five years as a college dean before becoming provost. As a dean you grew
+federal research funding by more than 70 percent, secured a transformational naming
+gift, and launched a fast-growing new academic program — so you read every claim with
+the eye of both a scholar and an institutional builder.
+
+Review the draft against the SOURCE FINDINGS on:
+- Evidence and grounding: as a legal scholar you demand that every assertion be
+  supported by the findings. Flag anything speculative, unsourced, or overstated, and
+  distinguish institutional PR language from genuine evidence.
+- Academic and research substance: does it correctly weigh research standing (AAU
+  membership, sponsored-program expenditures), academic breadth, faculty and student
+  outcomes, and clinical/health-system strength — not just marketing points?
+- Strategic and financial realism: as a former dean and fundraiser, judge whether the
+  opportunities have a credible path to execution and whether real threats
+  (competition for faculty and students, funding volatility, reputational risk) are
+  named honestly rather than downplayed.
+- Coverage, balance, and specificity: all four quadrants present, even-handed, and
+  concrete (facts, figures) rather than vague filler.
+
+Accept ONLY when the draft is well-grounded, complete, balanced, and worthy of being
+put in front of university leadership; otherwise require a revision. Be fair and
+collegial — critique the reasoning, not the institution — cite specific claims and
+quadrants, and make your fixes concrete and actionable.`,
+
+  grounding:
+`You are the CRITIC agent — a rigorous, fair reviewer of a draft SWOT.
+Judge the draft against the SOURCE FINDINGS on:
+- Grounding: is every claim supported by the findings? Flag anything unsupported,
+  speculative, or contradicted.
+- Coverage: are all four SWOT quadrants present and non-trivial?
+- Balance: is it even-handed, or skewed too positive / negative?
+- Specificity: are points concrete (numbers, facts) or vague filler?
+
+Accept ONLY when the draft is well-grounded, complete, and balanced; otherwise
+require a revision. In your assessment, be concise and name specific claims and
+quadrants; in fixes, give concrete, actionable edits.`,
+
+  devils:
+`You are the CRITIC agent playing devil's advocate on a draft SWOT.
+Pressure-test it against the SOURCE FINDINGS:
+- Which "strengths" are table stakes or easily copied?
+- Which "opportunities" lack a realistic path to capture them?
+- What material threat or weakness is missing or downplayed?
+- Where does it mistake hype or PR language for evidence?
+
+Accept only if the draft survives this scrutiny; otherwise require a revision.
+Be fair — attack weak reasoning, not the subject — and name specific claims.`,
+
+  gate:
+`You are the CRITIC agent acting as a fast quality gate on a draft SWOT.
+Accept if it is grounded in the findings, covers all four quadrants, and is
+balanced; otherwise require a revision. Keep the assessment terse (under 60 words)
+and list at most three concrete fixes.`
+};
+
+/* ---- tiny DOM helpers ---------------------------------------------- */
+const $ = (id) => document.getElementById(id);
+const trace = $("trace");
+
+/* ---- persistence: prompts + key survive reload --------------------- */
+// Persisted across reloads: the API key + non-prompt config only.
+// System prompts (p-*) and the voice preset are intentionally NOT here —
+// they're session-only so each refresh starts with a clean slate.
+const PERSIST = ["apiKey","defaultModel",
+                 "m-orch","m-resp","m-data","m-coder","m-critic","m-voice",
+                 "t-orch","t-resp","t-data","t-coder","t-critic","t-voice"];
+const EPHEMERAL = new Set(["p-orch","p-resp","p-data","p-coder","p-image","p-critic","p-voice","criticPreset","voicePreset"]);
+
+function loadState() {
+  // drop any previously written system prompts — fresh slate every refresh
+  EPHEMERAL.forEach(id => localStorage.removeItem("gbswot2:" + id));
+  PERSIST.forEach(id => {
+    const el = $(id); if (!el) return;
+    const saved = localStorage.getItem("gbswot2:" + id);
+    if (saved !== null) el.value = saved;
+    else if (DEFAULTS[id] !== undefined) el.value = DEFAULTS[id];
+  });
+  // seed any prompt not yet in localStorage
+  Object.keys(DEFAULTS).forEach(id => {
+    const el = $(id);
+    if (el && !el.value) el.value = DEFAULTS[id];
+  });
+  refreshConnStatus();
+  syncRanges();
+  loadConn();
+  updateOrchConnections();
+  setCanvasCollapsed(localStorage.getItem("gbswot2:canvasCollapsed") === "1");
+  // chat stays locked until the student saves their agentic setup
+  $("taskInput").disabled = true; $("sendBtn").disabled = true;
+}
+
+/* ---- data connector: fixed University of Miami sources ------------
+   For this exercise the connector is hard-wired to four UM sources and
+   students can't add/remove them. getUrls() just returns that list. */
+const DATA_SOURCES = [
+  "https://people.miami.edu/executive-leadership/index.html",
+  "https://news.miami.edu/stories/2025/07/university-of-miami-gets-a-new-provost.html",
+  "https://ai.it.miami.edu/",
+  "https://welcome.miami.edu/about-um/index.html"
+];
+function getUrls() { return [...DATA_SOURCES]; }
+
+/* Embedded snapshots of the four University of Miami sources, captured
+   so the data connector works offline with no network / CORS dependency.
+   Keyed by the exact URL in DATA_SOURCES. */
+const DATA_SNAPSHOTS = {
+  "https://people.miami.edu/executive-leadership/index.html": "University of Miami — Executive Leadership\n\nThe University of Miami's senior leadership team includes:\n\n- Joseph James Echevarria — President and CEO, University of Miami, and President, University of Miami Health System\n- Joel Samuels — Executive Vice President for Academic Affairs and Provost\n- Rudy Fernandez — Executive Vice President, University Operations and External Affairs, and Senior Advisor to the President\n- Dipen J. Parekh — Executive Vice President for Health Affairs and CEO of UHealth\n- Alison Mincey — Executive Vice President for Administration and Chief Human Resources Officer\n- Tanya Eleni Andreadis — Senior Vice President and Chief Marketing, Communications, and Digital Officer\n- Josh Friedman — Senior Vice President, Development and Alumni Relations\n- David W. Reis — Senior Vice President, Chief Information and Digital Officer\n- Aileen M. Ugalde — Senior Vice President and General Counsel\n- Patricia A. Whitely — Senior Vice President, Student Affairs and Alumni Engagement\n- Jessica Brumley — Vice President, Facilities Operations and Planning\n- Blanca Aurora Malagon — Vice President, Audit and Compliance\n- Kymberlee J. Manni — CEO, University of Miami Hospital and Clinics\n- Stephen D. Nimer — Director, Sylvester Comprehensive Cancer Center\n- Raena Wright — Vice President, Government Affairs and Community Relations\n- Frances Marine Davis — Secretary of the Board of Trustees and Associate Vice President\n\n(Snapshot captured from https://people.miami.edu/executive-leadership/index.html)",
+  "https://news.miami.edu/stories/2025/07/university-of-miami-gets-a-new-provost.html": "University of Miami Gets a New Provost (July 2025)\n\nThe University of Miami named Joel Hassman Samuels as executive vice president for academic affairs and provost, effective August 11, 2025. He succeeds interim provost Guillermo Prado. President Joseph Echevarria praised Samuels's combination of experience as a tenured law professor, researcher, and administrator.\n\nBackground: Samuels served for five years as dean of the College of Arts and Sciences at the University of South Carolina. He is a law professor whose scholarship centers on the rule of law, and he also holds credentials in Russian and East European Studies. His degrees include a Bachelor of Arts in Politics from Princeton University (magna cum laude), a Juris Doctor from the University of Michigan (Clarence Darrow Scholar), and a Master of Arts in Russian and East European Studies from the University of Michigan.\n\nAccomplishments at South Carolina: he increased federal grant dollars by more than 70 percent and drove the college past $50 million in federal grants annually for the first time in its history; secured a $75 million naming gift, the largest programmatic gift in USC history; founded a neuroscience program that became the institution's fastest-growing major; and led the Rule of Law Collaborative, which attracted more than $27 million in federal grants, making him the top-funded social scientist at the university. He also coached a nationally ranked roller derby team.\n\nSamuels emphasized commitments to student impact, research innovation, and clinical excellence. The University simultaneously created a chief scientific officer role to strengthen research leadership across disciplines.\n\n(Snapshot captured from https://news.miami.edu/stories/2025/07/university-of-miami-gets-a-new-provost.html)",
+  "https://ai.it.miami.edu/": "AI at the University of Miami (Information Technology)\n\nThe University of Miami operates a University-wide AI initiative, run out of Information Technology, that provides tools, resources, and support to students, faculty, and staff.\n\nUniversity-supported AI tools include: Microsoft Copilot on the web and Copilot for Microsoft 365; Google Gemini and Gemini's NotebookLM; Adobe Firefly; and Help Me Write, among others available through an exploration portal.\n\nResources and enablement: an \"AI @ UM\" newsletter with practical AI tips, University-supported tools, upcoming learning opportunities, and stories about responsible AI use; industry-insight content on AI trends; and office hours with the AI enablement team for one-on-one consultation. An AI Request Form lets community members connect with the AI team for expert guidance and support in leveraging AI technologies, and an AI Projects dashboard showcases institutional initiatives and applications.\n\nThe initiative emphasizes responsible, practical adoption of AI, institutional innovation, and community engagement, all coordinated by a dedicated AI team within IT.\n\n(Snapshot captured from https://ai.it.miami.edu/)",
+  "https://welcome.miami.edu/about-um/index.html": "About the University of Miami\n\nThe University of Miami is a private research university established in 1925 during a regional real estate boom. Its main campus sits in Coral Gables, Florida, on land originally donated by George E. Merrick, founder of Coral Gables, who contributed 160 acres and nearly $5 million to launch the institution.\n\nThe University comprises 12 schools and colleges offering nearly 350 majors and programs, spanning architecture, arts and sciences, business, communication, education, engineering, law, marine and atmospheric science, medicine, music, nursing, and continuing and international education. More than 19,000 students from around the world attend.\n\nResearch: the University conducts more than $492 million in research and sponsored-program expenditures annually and is a member of the Association of American Universities (AAU) — a distinction extended to only about 3 percent of four-year institutions in North America.\n\nCommunity and mission: located in one of the nation's most multicultural cities, the University reflects a plurality of races, ethnicities, customs, and faiths, and emphasizes diversity and multicultural engagement alongside its commitment to teaching, research, and service to the region.\n\n(Snapshot captured from https://welcome.miami.edu/about-um/index.html)"
+};
+function saveField(id) {
+  if (EPHEMERAL.has(id)) return;              // system prompts + preset never persist
+  const el = $(id); if (el) localStorage.setItem("gbswot2:" + id, el.value);
+}
+PERSIST.forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener("input", () => { saveField(id); if (id==="apiKey") refreshConnStatus(); });
+});
+
+function refreshConnStatus() {
+  const ok = !!$("apiKey").value.trim();
+  $("st-conn").classList.toggle("ok", ok);
+  $("keyhint").textContent = ok ? "api key set · stored locally" : "no api key set";
+  $("keyhint").style.color = ok ? "var(--data)" : "var(--fg-faint)";
+}
+
+/* ---- collapse / advanced / range UI -------------------------------- */
+document.querySelectorAll("[data-toggle]").forEach(h =>
+  h.addEventListener("click", () => h.closest(".card").classList.toggle("collapsed")));
+document.querySelectorAll("[data-adv]").forEach(t =>
+  t.addEventListener("click", () => {
+    const adv = t.nextElementSibling;
+    adv.classList.toggle("open");
+    t.textContent = adv.classList.contains("open") ? "▾ advanced" : "▸ advanced";
+  }));
+function syncRanges() {
+  ["orch","resp","data","coder","critic","voice"].forEach(a => {
+    const r = $("t-"+a), out = $("to-"+a);
+    if (r && out) { out.textContent = r.value; r.addEventListener("input", () => out.textContent = r.value); }
+  });
+}
+
+/* voice preset -> fills the (otherwise blank) brand-voice prompt.
+   Most presets are personas fed through VOICE_TEMPLATE. A few (e.g. the
+   University of Miami editorial guidelines) are full house-style prompts in
+   VOICE_PRESETS, and the UM editorial preset also reveals a clickable link to
+   the official guidelines. */
+$("voicePreset").addEventListener("change", () => {
+  const v = $("voicePreset").value;
+  // the editorial-guidelines link only shows for that specific preset
+  $("voiceGuidelines").hidden = (v !== "umiami-editorial");
+  if (!v) return;                       // blank option: leave whatever the student typed
+  $("p-voice").value = VOICE_PRESETS[v] || VOICE_TEMPLATE.replace("{VOICE}", v);
+  saveField("p-voice");
+});
+
+/* critic preset -> fills the (otherwise blank) critic prompt */
+$("criticPreset").addEventListener("change", () => {
+  const v = $("criticPreset").value;
+  if (!v || !CRITIC_PRESETS[v]) return; // blank option: leave whatever the student typed
+  $("p-critic").value = CRITIC_PRESETS[v];
+  saveField("p-critic");
+});
+
+/* ---- connections: wire worker agents into the orchestrator prompt --
+   Checking a box appends a managed snippet to the orchestrator's system
+   prompt (so it knows the agent exists) AND allows that agent to run. */
+const CONN_AGENTS = [
+  { key: "research", id: "conn-research", desc: "live web researcher → market Opportunities & Threats" },
+  { key: "data",     id: "conn-data",     desc: "internal company data from the provided files → Strengths & Weaknesses" },
+  { key: "coder",    id: "conn-coder",    desc: "writes or edits code for software / engineering tasks" },
+  { key: "image",    id: "conn-image",    desc: "generates a picture from a text description. Select ONLY when the user explicitly asks for an image, illustration, diagram, logo, or other visual — NEVER for a text, report, SWOT, HTML, or code request" },
+  { key: "critic",   id: "conn-critic",   desc: "reviews the synthesized report for grounding, coverage & balance — runs AUTOMATICALLY after synthesis, so you do NOT need to list it in your plan" }
+];
+const CONN_OPEN = "<<CONNECTED AGENTS>>", CONN_CLOSE = "<</CONNECTED AGENTS>>";
+
+function connectedKeys() {
+  return CONN_AGENTS.filter(a => $(a.id) && $(a.id).checked).map(a => a.key);
+}
+function updateOrchConnections() {
+  const p = $("p-orch");
+  // strip any existing managed block(s), preserving the student's own text
+  const re = new RegExp("\\n*" + CONN_OPEN + "[\\s\\S]*?" + CONN_CLOSE, "g");
+  let base = p.value.replace(re, "").replace(/\s+$/, "");
+  const keys = connectedKeys();
+  if (keys.length) {
+    const lines = CONN_AGENTS.filter(a => keys.includes(a.key))
+      .map(a => `- "${a.key}": ${a.desc}`).join("\n");
+    const sep = base ? "\n\n" : "";   // only separate from the student's text if there is any
+    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder — it will render the previous result (with its citations) and re-gathering with data/research is unnecessary and wrong.\n${CONN_CLOSE}`;
+  }
+  p.value = base;
+  saveField("p-orch");
+}
+function saveConn() { CONN_AGENTS.forEach(a => localStorage.setItem("gbswot2:" + a.id, $(a.id).checked ? "1" : "0")); }
+function loadConn() { CONN_AGENTS.forEach(a => { const v = localStorage.getItem("gbswot2:" + a.id); if (v !== null && $(a.id)) $(a.id).checked = v === "1"; }); }
+CONN_AGENTS.forEach(a => {
+  const el = $(a.id);
+  if (el) el.addEventListener("change", () => { saveConn(); updateOrchConnections(); });
+});
+
+/* ---- OpenRouter call ----------------------------------------------- */
+async function callModel({ model, system, user, temperature, responseFormat }) {
+  const key = $("apiKey").value.trim();
+  if (!key) throw new Error("No OpenRouter API key set.");
+  const body = {
+    model: model || $("defaultModel").value.trim() || "google/gemini-3.5-flash-lite",
+    temperature: temperature,
+    messages: [
+      ...(system ? [{ role: "system", content: system }] : []),
+      { role: "user", content: user }
+    ]
+  };
+  if (responseFormat) body.response_format = responseFormat;   // strict JSON for the orchestrator
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + key,
+      "Content-Type": "application/json",
+      "HTTP-Referer": location.origin,
+      "X-Title": "Agentic-SWOT"
+    },
+    body: JSON.stringify(body)
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error("OpenRouter " + res.status + ": " + raw.slice(0, 300));
+  const json = JSON.parse(raw);
+  const content = json.choices?.[0]?.message?.content ?? "(empty response)";
+  return { content, sent: body, received: json };
+}
+
+/* Image generation uses OpenRouter's dedicated /images endpoint, not chat.
+   Returns data-URL(s) built from the base64 payload. */
+async function callImage({ model, prompt, size }) {
+  const key = $("apiKey").value.trim();
+  if (!key) throw new Error("No OpenRouter API key set.");
+  // size caps the resolution so the returned base64 stays small — a full-res
+  // image can be a multi-hundred-KB blob that gets truncated mid-transfer,
+  // which then blows up JSON.parse below with "Unterminated string in JSON".
+  // response_format:"url" is preferred when the provider supports it: the JSON
+  // then carries a short URL instead of a giant base64 payload.
+  const body = {
+    model: model || "qwen/qwen-image-3",
+    prompt,
+    size: size || "512x512",
+    response_format: "url"
+  };
+  const res = await fetch("https://openrouter.ai/api/v1/images", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + key,
+      "Content-Type": "application/json",
+      "HTTP-Referer": location.origin,
+      "X-Title": "Agentic-SWOT"
+    },
+    body: JSON.stringify(body)
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error("OpenRouter images " + res.status + ": " + raw.slice(0, 300));
+  let json;
+  try {
+    json = JSON.parse(raw);
+  } catch (e) {
+    // Almost always a truncated response: the body ended mid-string. Surface a
+    // clear, actionable message instead of the raw parser error.
+    throw new Error(
+      `Image response was truncated/invalid JSON (${raw.length} chars received). ` +
+      `Try a smaller resolution or run it again. [${e.message}]`);
+  }
+  // tolerate a few shapes: {data:[{b64_json,media_type}|{url}]} or message.images
+  const imgs = [];
+  (json.data || []).forEach(d => {
+    if (d.b64_json) imgs.push(`data:${d.media_type || "image/png"};base64,${d.b64_json}`);
+    else if (d.url) imgs.push(d.url);
+  });
+  const ann = json.choices?.[0]?.message?.images;
+  if (Array.isArray(ann)) ann.forEach(a => { const u = a?.image_url?.url || a?.url; if (u) imgs.push(u); });
+  return { images: imgs, content: json.choices?.[0]?.message?.content || "", sent: body, received: json };
+}
+
+/* ---- trace rendering ----------------------------------------------- */
+function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+
+/* Replace big base64 image blobs with placeholders so run exports and the
+   raw inspector stay small/shareable. */
+function stripB64(json) {
+  try {
+    const c = JSON.parse(JSON.stringify(json));
+    (c.data || []).forEach(d => { if (d.b64_json) d.b64_json = `[base64 image omitted · ${d.b64_json.length} chars]`; });
+    const imgs = c.choices?.[0]?.message?.images;
+    if (Array.isArray(imgs)) imgs.forEach(a => {
+      if (a?.image_url?.url && String(a.image_url.url).startsWith("data:")) a.image_url.url = "[data-url omitted]";
+    });
+    return c;
+  } catch (_) { return json; }
+}
+
+/* Pull source citations out of a completion. OpenRouter standardizes them as
+   choices[0].message.annotations[] with type "url_citation"; Perplexity also
+   sometimes returns a top-level "citations" array. Handle both, de-duped. */
+function extractCitations(json) {
+  const out = [], seen = new Set();
+  const push = (url, title) => {
+    if (url && !seen.has(url)) { seen.add(url); out.push({ url, title: title || "" }); }
+  };
+  const ann = json?.choices?.[0]?.message?.annotations;
+  if (Array.isArray(ann)) ann.forEach(a => {
+    if (a && a.type === "url_citation" && a.url_citation) push(a.url_citation.url, a.url_citation.title);
+  });
+  if (Array.isArray(json?.citations)) json.citations.forEach(c => {
+    if (typeof c === "string") push(c); else if (c && c.url) push(c.url, c.title);
+  });
+  return out;
+}
+
+function addBlock(acc, tag, badge) {
+  const b = el(`<div class="block" style="--acc: var(--${acc})">
+      <div class="bhead"><span>${tag}</span><span class="badge">${badge||""}</span><span class="spin-wrap"></span></div>
+      <div class="content dim">…</div>
+    </div>`);
+  b.querySelector(".spin-wrap").innerHTML = '<span class="spin"></span>';
+  trace.appendChild(b);
+  $("chat").scrollTop = $("chat").scrollHeight;
+  return b;
+}
+/* Render text, turning ```fenced``` code into styled boxes with a copy button. */
+function renderContent(container, text) {
+  container.textContent = "";
+  const re = /```(\w*)\n?([\s\S]*?)```/g;
+  let last = 0, m;
+  const addText = (t) => { if (t) container.appendChild(document.createTextNode(t)); };
+  while ((m = re.exec(text)) !== null) {
+    addText(text.slice(last, m.index));
+    const code = m[2].replace(/\n$/, "");
+    const lang = (m[1] || "").toLowerCase();
+    // HTML gets a Code/Preview toggle so students can see the coder's page rendered,
+    // not just the markup. Detect by fence language or a leading HTML-ish tag.
+    const isHtml = lang === "html"
+      || /^\s*<(?:!doctype|html|head|body|div|section|article|main|header|footer|nav|table|ul|ol|h[1-6]|p|svg|style)\b/i.test(code);
+    const toggle = isHtml
+      ? `<div class="codetoggle"><button type="button" class="ct-code">code</button><button type="button" class="ct-prev active">preview</button></div>`
+      : "";
+    // HTML defaults to the rendered preview; the raw <pre> starts hidden.
+    const preview = isHtml ? `<iframe class="codepreview" sandbox="allow-scripts"></iframe>` : "";
+    const box = el(`<div class="codebox"><div class="codebar"><span class="codelang">${esc(m[1] || "code")}</span>${toggle}<button type="button" class="codecopy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>copy</span></button></div><pre${isHtml ? " hidden" : ""}></pre>${preview}</div>`);
+    box.querySelector("pre").textContent = code;
+    box.querySelector(".codecopy").addEventListener("click", (e) => {
+      const btn = e.currentTarget, lbl = btn.querySelector("span");
+      navigator.clipboard.writeText(code).then(() => {
+        lbl.textContent = "copied ✓";
+        setTimeout(() => { lbl.textContent = "copy"; }, 1400);
+      }).catch(() => { lbl.textContent = "copy failed"; });
+    });
+    if (isHtml) {
+      const pre = box.querySelector("pre");
+      const frame = box.querySelector(".codepreview");
+      const bCode = box.querySelector(".ct-code");
+      const bPrev = box.querySelector(".ct-prev");
+      frame.srcdoc = code;                                     // preview is the default view — render immediately
+      bPrev.addEventListener("click", () => {
+        pre.hidden = true; frame.hidden = false;
+        bPrev.classList.add("active"); bCode.classList.remove("active");
+      });
+      bCode.addEventListener("click", () => {
+        pre.hidden = false; frame.hidden = true;
+        bCode.classList.add("active"); bPrev.classList.remove("active");
+      });
+    }
+    container.appendChild(box);
+    last = re.lastIndex;
+  }
+  addText(text.slice(last));
+}
+
+function finishBlock(b, text, io) {
+  b.querySelector(".spin-wrap").innerHTML = "";
+  const c = b.querySelector(".content");
+  c.classList.remove("dim");
+  renderContent(c, text);
+  if (io) {
+    const det = el(`<details class="inspect"><summary>inspect raw messages</summary>
+      <pre>REQUEST\n${esc(JSON.stringify(io.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(io.received, null, 2))}</pre></details>`);
+    b.appendChild(det);
+  }
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+function failBlock(b, msg) {
+  b.classList.add("err");
+  b.querySelector(".spin-wrap").innerHTML = "";
+  const c = b.querySelector(".content"); c.classList.remove("dim"); c.textContent = "✗ " + msg;
+}
+
+/* Render a structured critic verdict: accept/revise + score + assessment + fixes. */
+function renderCriticReview(b, review, io) {
+  b.querySelector(".spin-wrap").innerHTML = "";
+  const c = b.querySelector(".content"); c.classList.remove("dim"); c.innerHTML = "";
+  const accepted = review.verdict === "accept";
+  c.appendChild(el(`<div style="margin-bottom:7px;font-size:11px">` +
+      `<span style="color:${accepted ? "var(--ok)" : "var(--critic)"}">●</span> ` +
+      `verdict: <b style="color:var(--fg)">${accepted ? "ACCEPT" : "REVISE"}</b> ` +
+      `<span style="color:var(--fg-faint)">· score ${esc(String(review.score ?? "—"))}/10</span></div>`));
+  const assess = document.createElement("div");
+  assess.style.whiteSpace = "pre-wrap";
+  assess.textContent = review.assessment || "";
+  c.appendChild(assess);
+  if (Array.isArray(review.fixes) && review.fixes.length) {
+    const ul = el(`<ul style="margin:7px 0 0;padding-left:16px;color:var(--fg-dim);font-size:11.5px;line-height:1.55"></ul>`);
+    review.fixes.forEach(f => { const li = document.createElement("li"); li.textContent = f; ul.appendChild(li); });
+    c.appendChild(ul);
+  }
+  if (io) b.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>` +
+      `<pre>REQUEST\n${esc(JSON.stringify(io.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(io.received, null, 2))}</pre></details>`));
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+
+/* ---- export the whole run (every request + response) as JSON ------- */
+function appendExport(runLog) {
+  const bar = el(`<div class="exportbar">
+      <button type="button" class="exp exp-dl">⬇ export run as JSON</button>
+      <button type="button" class="exp ghost exp-copy">copy</button>
+      <span class="exp-note">share this so the prompts can be tweaked</span>
+    </div>`);
+  const text = () => JSON.stringify(runLog, null, 2);
+  bar.querySelector(".exp-dl").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([text()], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `glass-box-swot-run-${Date.now()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  bar.querySelector(".exp-copy").addEventListener("click", async (e) => {
+    try {
+      await navigator.clipboard.writeText(text());
+      e.target.textContent = "copied ✓";
+      setTimeout(() => { e.target.textContent = "copy"; }, 1500);
+    } catch (_) { e.target.textContent = "copy failed"; }
+  });
+  trace.appendChild(bar);
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+
+/* ---- the pipeline (hybrid orchestration) --------------------------- */
+let running = false;
+let savedConfig = null;   // the locked-in setup snapshot; set by "save agentic setup"
+let lastDeliverable = ""; // previous turn's final output — carried into the next run as memory (resets on refresh)
+let lastCitations = [];   // previous turn's researcher citations — so a later "render as HTML" turn keeps sources
+
+async function run() {
+  if (running) return;
+  const task = $("taskInput").value.trim() || $("taskInput").placeholder;
+  if (!$("apiKey").value.trim()) { alert("Set your OpenRouter API key first."); return; }
+  if (!savedConfig) { alert("Save your agentic setup first."); return; }
+  const cfg = savedConfig;               // the run uses the LOCKED setup, not live inputs
+  const memory = lastDeliverable         // carry the previous turn's result so follow-ups resolve
+    ? `Earlier in this conversation, the agent system produced this result:\n\n${lastDeliverable}\n\n----------\n\n`
+    : "";
+
+  running = true; $("sendBtn").disabled = true;
+  // clear the empty-state on first run
+  const emptyEl = trace.querySelector(".empty"); if (emptyEl) emptyEl.remove();
+
+  trace.appendChild(el(`<div class="msg user">${esc(task)}</div>`));
+
+  // full transcript of every agent call — exported at the end
+  const runLog = {
+    task,
+    default_model: $("defaultModel").value.trim(),
+    started_at: new Date().toISOString(),
+    steps: []
+  };
+  const logStep = (agent, r, extra) => runLog.steps.push(
+    Object.assign({ agent }, extra || {}, {
+      request: r ? r.sent : null,
+      response: r ? r.received : null
+    }));
+
+  let finalDeliverable = "";             // this run's final output, carried into the next turn
+  let allCitations = [];                 // researcher citations (hoisted so the finally block can persist them)
+  try {
+  // 1) ORCHESTRATOR -> plan + agent selection ----------------------
+  const orchBlock = addBlock("orch", "orchestrator · plan", "");
+  let plan = { plan: [], agents: ["data","research"] };
+  try {
+    // constrain the planner to strict JSON, and to only the connected agents
+    const agentEnum = [...cfg.connected];
+    const r = await callModel({
+      model: cfg.orch.model,
+      system: cfg.orch.system,
+      user: memory + task,
+      temperature: cfg.orch.temp,
+      responseFormat: {
+        type: "json_schema",
+        json_schema: {
+          name: "orchestrator_plan",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["plan", "agents"],
+            properties: {
+              plan: { type: "array", items: { type: "string" } },
+              agents: { type: "array", items: agentEnum.length ? { type: "string", enum: agentEnum } : { type: "string" } }
+            }
+          }
+        }
+      }
+    });
+    try { plan = JSON.parse(r.content.match(/\{[\s\S]*\}/)[0]); } catch (_) {}
+    logStep("orchestrator.plan", r, { parsed_plan: plan });
+    const steps = (plan.plan || []).map(s =>
+      `<li><span class="mk">▸</span> ${esc(s)}</li>`).join("");
+    const chosen = (plan.agents || []).join(", ") || "(none)";
+    orchBlock.querySelector(".spin-wrap").innerHTML = "";
+    const c = orchBlock.querySelector(".content");
+    c.classList.remove("dim");
+    c.innerHTML = `<ul class="planlist">${steps}</ul>
+        <div style="margin-top:6px;color:var(--fg-faint);font-size:11px">agents selected: <code>${esc(chosen)}</code></div>`;
+    orchBlock.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>
+      <pre>REQUEST\n${esc(JSON.stringify(r.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(r.received, null, 2))}</pre></details>`));
+  } catch (e) { failBlock(orchBlock, e.message); return; }
+
+  const wants = new Set(plan.agents || ["data","research"]);
+  const connected = cfg.connected;
+  let dataFindings = "", webFindings = "", coderFindings = "";
+
+  // 2) WORKER AGENTS (parallel) — run only if the orchestrator picked
+  //    them AND they're connected in the connections box
+  const tasks = [];
+
+  if (wants.has("data") && connected.has("data")) {
+    const b = addBlock("data", "data connector", "your data");
+    tasks.push((async () => {
+      try {
+        const urls = cfg.data.urls;
+        let corpus = "";
+        for (const u of urls) {
+          // Read from the embedded snapshot (no network / CORS). See DATA_SNAPSHOTS.
+          const txt = DATA_SNAPSHOTS[u] || "";
+          corpus += `\n--- ${u} ---\n${txt.slice(0, 20000)}\n`;
+        }
+        const r = await callModel({
+          model: cfg.data.model,
+          system: cfg.data.system,
+          user: memory + `Subject/task: ${task}\n\nReport your findings as concise prose or markdown notes only. Do NOT output HTML, code, or a full web page even if the task asks for one — a later coder step handles any rendering.\n\nRAW INTERNAL DATA:\n${corpus}`,
+          temperature: cfg.data.temp
+        });
+        dataFindings = r.content;
+        logStep("data_connector", r, { urls });
+        finishBlock(b, r.content, r);
+      } catch (e) { failBlock(b, e.message); logStep("data_connector", null, { error: e.message }); }
+    })());
+  }
+
+  if (wants.has("research") && connected.has("research")) {
+    const b = addBlock("resp", "researcher", cfg.resp.model);
+    tasks.push((async () => {
+      try {
+        const r = await callModel({
+          model: cfg.resp.model,
+          system: cfg.resp.system,
+          user: memory + `Analyze the external environment for: ${task}\n\nReport your findings as concise prose or markdown notes with citations. Do NOT output HTML, code, or a full web page even if the task asks for one — a later coder step handles any rendering.`,
+          temperature: cfg.resp.temp
+        });
+        const cites = extractCitations(r.received);
+
+        // Fold citations into the findings text so the synthesis + voice
+        // agents downstream can keep them in the final report.
+        let findings = r.content;
+        if (cites.length) {
+          findings += "\n\nSOURCES:\n" + cites
+            .map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n");
+        }
+        webFindings = findings;
+        allCitations = cites;   // hand the structured sources to the final HTML step
+        logStep("researcher", r, { citations: cites });
+
+        // Render: analysis text, then a clickable source list, then raw inspector.
+        b.querySelector(".spin-wrap").innerHTML = "";
+        const cEl = b.querySelector(".content"); cEl.classList.remove("dim");
+        cEl.textContent = r.content;
+        if (cites.length) {
+          const cd = el(`<div class="cites"><div class="cites-h">sources · ${cites.length}</div></div>`);
+          cites.forEach((c, i) => cd.appendChild(el(
+            `<a class="cite" target="_blank" rel="noopener" href="${esc(c.url)}"><span class="n">[${i + 1}]</span>${esc(c.title || c.url)}</a>`)));
+          b.appendChild(cd);
+        }
+        b.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>
+          <pre>REQUEST\n${esc(JSON.stringify(r.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(r.received, null, 2))}</pre></details>`));
+        $("chat").scrollTop = $("chat").scrollHeight;
+      } catch (e) { failBlock(b, e.message); logStep("researcher", null, { error: e.message }); }
+    })());
+  }
+
+  // NOTE: the coder is intentionally NOT run here in parallel. It runs LAST
+  // (step 5, below) so it can consume the finished, critic-reviewed SWOT and
+  // the researcher's citations and render them as the final HTML deliverable.
+
+  if (wants.has("image") && connected.has("image")) {
+    const b = addBlock("image", "image", cfg.image.model);
+    tasks.push((async () => {
+      try {
+        const style = (cfg.image.style || "").trim();
+        const prompt = (style ? style + "\n\n" : "") + task;
+        const r = await callImage({ model: cfg.image.model, prompt, size: cfg.image.size });
+        const cleanReceived = stripB64(r.received);
+        logStep("image", { sent: r.sent, received: cleanReceived }, { images: r.images.length });
+        b.querySelector(".spin-wrap").innerHTML = "";
+        const cEl = b.querySelector(".content"); cEl.classList.remove("dim");
+        cEl.textContent = r.images.length ? `generated ${r.images.length} image(s)` : (r.content || "(no image returned)");
+        r.images.forEach(src => b.appendChild(el(`<img class="genimg" src="${src}" alt="generated image" />`)));
+        b.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>
+          <pre>REQUEST\n${esc(JSON.stringify(r.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(cleanReceived, null, 2))}</pre></details>`));
+        $("chat").scrollTop = $("chat").scrollHeight;
+      } catch (e) { failBlock(b, e.message); logStep("image", null, { error: e.message }); }
+    })());
+  }
+
+  await Promise.all(tasks);
+
+  // Synthesis + brand voice only make sense for a PROSE report (SWOT-style).
+  // Pure code or image tasks skip them so the voice agent never rewrites code —
+  // that worker's own output is the deliverable.
+  if (dataFindings || webFindings) {
+
+  // 3) ORCHESTRATOR synthesis -> single report ---------------------
+  const synBlock = addBlock("orch", "orchestrator · synthesis", "");
+  let report = "";
+  try {
+    const r = await callModel({
+      model: cfg.orch.model,
+      system: "You are the ORCHESTRATOR. Combine the agent findings into one clear deliverable for the user's task. If the task is a SWOT analysis, use four labeled sections (Strengths, Weaknesses, Opportunities, Threats); otherwise synthesize the findings into a coherent response. Use only the findings provided. Preserve any [n] citation markers from the findings. Output plain markdown prose only — never HTML, code, or a full web page, even if the task asks for a webpage; a later coder step handles rendering.",
+      user: memory + `Task: ${task}\n\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}`,
+      temperature: cfg.orch.temp
+    });
+    report = r.content;
+    finalDeliverable = report;
+    logStep("orchestrator.synthesis", r, {});
+    finishBlock(synBlock, r.content, r);
+  } catch (e) { failBlock(synBlock, e.message); return; }
+
+  // 3b) CRITIC ⇄ REVISE loop --------------------------------------
+  //     Sequential reflection: critic reviews the draft → if it says "revise",
+  //     the orchestrator produces a revised draft → critic reviews again …
+  //     until the critic accepts (or MAX_ROUNDS is hit). Each pass is its own
+  //     block so the whole response>critic>revised>critic>… loop is visible.
+  if (connected.has("critic")) {
+    const MAX_ROUNDS = 3;                 // safety cap so the loop always terminates
+    for (let round = 1; round <= MAX_ROUNDS; round++) {
+      // -- critic reviews the CURRENT report, returning a structured verdict --
+      const critBlock = addBlock("critic", "critic · review", `round ${round}`);
+      let review = null, cr = null;
+      try {
+        cr = await callModel({
+          model: cfg.critic.model,
+          system: cfg.critic.system,
+          user: `Task: ${task}\n\nDRAFT REPORT TO REVIEW:\n${report}\n\nSOURCE FINDINGS IT SHOULD BE GROUNDED IN:\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}\n\nReturn ONLY JSON: {"verdict":"accept"|"revise","score":<1-10 integer>,"assessment":"<your written review>","fixes":["concrete edit", …]}`,
+          temperature: cfg.critic.temp,
+          responseFormat: {
+            type: "json_schema",
+            json_schema: {
+              name: "critic_review", strict: true,
+              schema: {
+                type: "object", additionalProperties: false,
+                required: ["verdict", "score", "assessment", "fixes"],
+                properties: {
+                  verdict:    { type: "string", enum: ["accept", "revise"] },
+                  score:      { type: "integer" },
+                  assessment: { type: "string" },
+                  fixes:      { type: "array", items: { type: "string" } }
+                }
+              }
+            }
+          }
+        });
+        try { review = JSON.parse(cr.content.match(/\{[\s\S]*\}/)[0]); } catch (_) {}
+        if (!review) {                    // model couldn't emit JSON — infer a verdict from the prose
+          const txt = cr.content || "";
+          const wantsRevise = /\brevise\b|\breject\b|needs[- ]work/i.test(txt) && !/\baccept\b|\bship\b|\bpass\b/i.test(txt);
+          review = { verdict: wantsRevise ? "revise" : "accept", score: null, assessment: txt, fixes: [] };
+        }
+        renderCriticReview(critBlock, review, cr);
+        logStep(`critic.round_${round}`, cr, { review });
+      } catch (e) { failBlock(critBlock, e.message); logStep(`critic.round_${round}`, null, { error: e.message }); break; }
+
+      // -- stop on acceptance, or once we've used our last round --
+      if (review.verdict === "accept" || round === MAX_ROUNDS) break;
+
+      // -- orchestrator revises the draft using the critic's feedback --
+      const revBlock = addBlock("orch", "orchestrator · revision", `round ${round}`);
+      try {
+        const rr = await callModel({
+          model: cfg.orch.model,
+          system: "You are the ORCHESTRATOR revising a draft SWOT using critic feedback. Apply the fixes, stay grounded in the findings, and keep the four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Preserve any [n] citation markers. Return ONLY the revised report as plain markdown prose — no preamble, and never HTML, code, or a web page even if the task asks for one; a later coder step handles rendering.",
+          user: `Task: ${task}\n\nCURRENT DRAFT:\n${report}\n\nCRITIC FEEDBACK (score ${review.score ?? "—"}/10):\n${review.assessment || ""}\n\nFIXES TO APPLY:\n${(review.fixes || []).map(f => "- " + f).join("\n") || "(none listed)"}\n\nSOURCE FINDINGS:\nINTERNAL:\n${dataFindings || "(none)"}\n\nEXTERNAL:\n${webFindings || "(none)"}`,
+          temperature: cfg.orch.temp
+        });
+        report = rr.content;              // the revised draft becomes the current report
+        finalDeliverable = report;
+        logStep(`orchestrator.revision_${round}`, rr, {});
+        finishBlock(revBlock, rr.content, rr);
+      } catch (e) { failBlock(revBlock, e.message); logStep(`orchestrator.revision_${round}`, null, { error: e.message }); break; }
+    }
+  }
+
+  // 4) BRAND VOICE rewrite -----------------------------------------
+  const vBlock = addBlock("voice", "brand voice · final report", "");
+  try {
+    const r = await callModel({
+      model: cfg.voice.model,
+      system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact and any [n] citation markers. Output prose only — do NOT produce HTML, code, or a web page.)",
+      user: report,
+      temperature: cfg.voice.temp
+    });
+    finalDeliverable = r.content;
+    logStep("brand_voice", r, {});
+    finishBlock(vBlock, r.content, r);
+  } catch (e) { failBlock(vBlock, e.message); logStep("brand_voice", null, { error: e.message }); }
+  }
+
+  // 5) CODER — FINAL STEP: render the finished SWOT as the HTML deliverable.
+  //    Runs LAST, so it consumes the synthesized + critic-reviewed + voiced
+  //    report AND the researcher's citations. When there is a finished report,
+  //    the coder is told to render it (sources included) as one HTML document,
+  //    and that HTML becomes the run's final output. With no upstream findings
+  //    (a pure code task) it behaves like before: just memory + task.
+  if (wants.has("coder") && connected.has("coder")) {
+    // Prefer THIS turn's freshly synthesized+vetted report; otherwise fall back
+    // to the PREVIOUS turn's deliverable so "now render it as HTML" just formats
+    // what was already gathered and vetted (no need to re-run data/research).
+    const finishedReport = finalDeliverable || lastDeliverable || "";
+    const citations = allCitations.length ? allCitations : lastCitations;
+    const b = addBlock("coder", finishedReport ? "coder · final HTML" : "coder · code", cfg.coder.model);
+    try {
+      let coderUser;
+      if (finishedReport) {
+        const srcList = citations.length
+          ? citations.map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n")
+          : "";
+        coderUser = memory +
+`Render the following finished SWOT analysis as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
+- Show all four SWOT sections, clearly labelled: Strengths, Weaknesses, Opportunities, Threats.
+- Preserve the wording and every fact — do not invent new claims.
+- End with a "Sources" section listing the citations below as clickable links (<a href="…" target="_blank" rel="noopener">), numbered to match any [n] markers in the text.${srcList ? "" : "\n- If no citations are provided, omit the Sources section."}
+- Return the full page in a single \`\`\`html fenced code block.
+
+FINISHED SWOT:
+${finishedReport}
+${srcList ? "\nCITATIONS:\n" + srcList : ""}`;
+      } else {
+        coderUser = memory + task;   // pure code task — original behaviour
+      }
+      const r = await callModel({
+        model: cfg.coder.model,
+        system: cfg.coder.system,
+        user: coderUser,
+        temperature: cfg.coder.temp
+      });
+      coderFindings = r.content;
+      finalDeliverable = r.content;   // the HTML is the final output for the exercise
+      logStep("coder", r, { grounded: !!finishedReport, citations: citations.length });
+      finishBlock(b, r.content, r);
+    } catch (e) { failBlock(b, e.message); logStep("coder", null, { error: e.message }); }
+  }
+  } finally {
+    runLog.finished_at = new Date().toISOString();
+    if (finalDeliverable) lastDeliverable = finalDeliverable;   // remember for the next turn
+    if (allCitations.length) lastCitations = allCitations;      // remember sources for a later "render as HTML" turn
+    $("memChip").hidden = !lastDeliverable;                     // show the memory indicator once active
+    appendExport(runLog);
+    running = false; $("sendBtn").disabled = false;
+  }
+}
+
+$("sendBtn").addEventListener("click", run);
+$("taskInput").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+
+/* ---- save / lock the agentic setup --------------------------------
+   The chat runs against a SNAPSHOT taken when the student clicks save.
+   Editing the setup afterwards does nothing until they save again. */
+function snapshotSetup() {
+  const dm = $("defaultModel").value.trim() || "google/gemini-3.5-flash-lite";
+  const m = (id) => ($(id).value.trim() || dm);
+  const t = (id) => parseFloat($(id).value);
+  return {
+    orch:  { system: $("p-orch").value,  model: m("m-orch"),  temp: t("t-orch") },
+    resp:  { system: $("p-resp").value,  model: m("m-resp"),  temp: t("t-resp") },
+    data:  { system: $("p-data").value,  model: m("m-data"),  temp: t("t-data"), urls: getUrls() },
+    coder: { system: $("p-coder").value, model: m("m-coder"), temp: t("t-coder") },
+    image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3"), size: ($("s-image") ? $("s-image").value : "512x512") },
+    critic:{ system: $("p-critic").value, model: m("m-critic"), temp: t("t-critic") },
+    voice: { system: $("p-voice").value, model: m("m-voice"), temp: t("t-voice") },
+    connected: new Set(connectedKeys())
+  };
+}
+function markDirty() {
+  if (!savedConfig) return;                 // before first save, keep the intro messaging
+  $("saveBtn").classList.remove("saved");
+  $("saveBtn").textContent = "save changes";
+  $("saveNote").classList.add("dirty");
+  $("saveNote").textContent = "unsaved changes — save to apply them to the chat";
+}
+function saveSetup() {
+  savedConfig = snapshotSetup();
+  const btn = $("saveBtn"), note = $("saveNote");
+  btn.classList.add("saved"); btn.textContent = "✓ setup saved";
+  note.classList.remove("dirty"); note.textContent = "locked in — head to the chat →";
+  $("taskInput").disabled = false; $("sendBtn").disabled = false;   // unlock chat
+  clearTimeout(saveSetup._t);
+  saveSetup._t = setTimeout(() => {
+    if (!$("saveNote").classList.contains("dirty")) { btn.classList.remove("saved"); btn.textContent = "save agentic setup"; }
+  }, 1600);
+}
+$("saveBtn").addEventListener("click", saveSetup);
+["input", "change"].forEach(ev => $("canvas").addEventListener(ev, markDirty));
+
+/* ---- collapse the setup panel (focus mode) ------------------------- */
+function setCanvasCollapsed(collapsed) {
+  document.body.classList.toggle("canvas-collapsed", collapsed);
+  const t = $("toggleCanvas");
+  t.querySelector(".navtoggle-ico").textContent = collapsed ? "⟩" : "⟨";
+  t.title = collapsed ? "Show setup panel" : "Collapse setup panel";
+}
+$("toggleCanvas").addEventListener("click", () => {
+  const collapsed = !document.body.classList.contains("canvas-collapsed");
+  setCanvasCollapsed(collapsed);
+  localStorage.setItem("gbswot2:canvasCollapsed", collapsed ? "1" : "0");
+});
+
+loadState();
+</script>
+</body>
+</html>
