@@ -626,6 +626,7 @@
         <label class="fld">Voice preset</label>
         <select id="voicePreset">
           <option value="">— write your own below, or pick a preset —</option>
+          <option value="nfcu">Navy Federal (members, active voice)</option>
           <option value="a swashbuckling pirate — say ahoy, yer, matey, nautical metaphors">Pirate</option>
           <option value="overly consultant-speak — dense corporate jargon like 'synergies', 'leverage core competencies', 'circle back', 'move the needle', 'value-add', 'boil the ocean', 'at the end of the day'; buzzword-heavy but keep every fact intact">Overly consultant speak</option>
           <option value="an extremely online Gen-Z creator — lowercase, slang, but still accurate">Gen-Z</option>
@@ -712,6 +713,21 @@ const VOICE_TEMPLATE =
 `You are the BRAND VOICE editor. Rewrite the report entirely in the voice of {VOICE}.
 Keep every fact and all four SWOT sections (Strengths, Weaknesses, Opportunities,
 Threats) intact. Change only the tone, never the content.`;
+
+/* Full-text brand-voice presets. Unlike the {VOICE} presets above, these are
+   complete system prompts (not substituted into VOICE_TEMPLATE), so they can
+   carry real brand rules and stay free of SWOT-specific wording. That lets the
+   same voice work on a full SWOT report AND on a plain direct answer. */
+const VOICE_PRESETS = {
+  nfcu:
+`You are the BRAND VOICE editor writing in Navy Federal Credit Union's voice.
+Rewrite the text using these rules, changing tone and wording only, never the facts:
+- Use active voice throughout. Recast passive constructions so the actor performs the verb.
+- Never refer to anyone as a "customer", "client", or "consumer". Always use "member" or "members".
+- Keep the tone clear, direct, and respectful, consistent with a member-owned, not-for-profit credit union.
+- Preserve every fact, figure, and any [n] citation markers. If the source has labeled sections, keep them.
+Output prose only. Do not add HTML, code, or a web page.`
+};
 
 /* Example critic system prompts for the dropdown. Like the brand-voice presets,
    these SCAFFOLD the (otherwise blank) prompt — students can edit them freely. */
@@ -831,11 +847,13 @@ function syncRanges() {
   });
 }
 
-/* voice preset -> fills the (otherwise blank) brand-voice prompt */
+/* voice preset -> fills the (otherwise blank) brand-voice prompt.
+   Known keys in VOICE_PRESETS are full system prompts; anything else is a
+   {VOICE} descriptor substituted into the generic SWOT template. */
 $("voicePreset").addEventListener("change", () => {
   const v = $("voicePreset").value;
   if (!v) return;                       // blank option: leave whatever the student typed
-  $("p-voice").value = VOICE_TEMPLATE.replace("{VOICE}", v);
+  $("p-voice").value = VOICE_PRESETS[v] ? VOICE_PRESETS[v] : VOICE_TEMPLATE.replace("{VOICE}", v);
   saveField("p-voice");
 });
 
@@ -872,7 +890,7 @@ function updateOrchConnections() {
     const lines = CONN_AGENTS.filter(a => keys.includes(a.key))
       .map(a => `- "${a.key}": ${a.desc}`).join("\n");
     const sep = base ? "\n\n" : "";   // only separate from the student's text if there is any
-    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder — it will render the previous result (with its citations) and re-gathering with data/research is unnecessary and wrong.\n${CONN_CLOSE}`;
+    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder — it will render the previous result (with its citations) and re-gathering with data/research is unnecessary and wrong.\n\nDIRECT ANSWER ROUTE: if the user's message is a simple question that needs no internal company data and no web research (for example a definitional question, a quick clarification, or small talk), return an EMPTY "agents" array ([]). The system will then answer the question directly and apply the brand voice, with no worker agents. Only select agents when the task genuinely needs them.\n${CONN_CLOSE}`;
   }
   p.value = base;
   saveField("p-orch");
@@ -1131,6 +1149,15 @@ let savedConfig = null;   // the locked-in setup snapshot; set by "save agentic 
 let lastDeliverable = ""; // previous turn's final output — carried into the next run as memory (resets on refresh)
 let lastCitations = [];   // previous turn's researcher citations — so a later "render as HTML" turn keeps sources
 
+/* ---- coder gate ----------------------------------------------------
+   The coder must ONLY run when the user explicitly asks for a page, code,
+   or a rendering of the analysis. This regex is the single source of truth
+   for that intent. It gates the coder in two places below: (1) the planner's
+   allowed-agent enum, so the model cannot even select the coder, and
+   (2) a post-plan filter, in case a provider ignores the enum constraint. */
+const CODE_INTENT_RE = /\b(html|web\s?pages?|rendere?d?|rendering|code[rd]?|css|javascript|java\s?script|build\s+(?:the\s+|an?\s+)?(?:page|app|site|web\s?page|html)|make\s+(?:an?\s+)?(?:html|web\s?page|page)|as\s+(?:an?\s+)?(?:html|web\s?page|page)|styled\s+page|single[-\s]file)\b/i;
+function taskWantsCoder(t) { return CODE_INTENT_RE.test(t || ""); }
+
 async function run() {
   if (running) return;
   const task = $("taskInput").value.trim() || $("taskInput").placeholder;
@@ -1166,9 +1193,15 @@ async function run() {
   // 1) ORCHESTRATOR -> plan + agent selection ----------------------
   const orchBlock = addBlock("orch", "orchestrator · plan", "");
   let plan = { plan: [], agents: ["data","research"] };
+  // Coder gate: computed once here so both the planner enum (hard gate) and
+  // the post-plan filter (soft backstop) below share the same decision.
+  const coderAllowed = taskWantsCoder(task);
   try {
-    // constrain the planner to strict JSON, and to only the connected agents
-    const agentEnum = [...cfg.connected];
+    // constrain the planner to strict JSON, and to only the connected agents.
+    // Coder gate (hard): only expose "coder" to the planner when the task
+    // explicitly asks for code / a page / a rendering. Otherwise it is
+    // removed from the enum, so the planner cannot choose it at all.
+    const agentEnum = [...cfg.connected].filter(k => k !== "coder" || coderAllowed);
     const r = await callModel({
       model: cfg.orch.model,
       system: cfg.orch.system,
@@ -1206,8 +1239,53 @@ async function run() {
   } catch (e) { failBlock(orchBlock, e.message); return; }
 
   const wants = new Set(plan.agents || ["data","research"]);
+  // Coder gate (soft backstop): if a provider ignored the enum and the
+  // planner emitted "coder" anyway, drop it unless the task asked for code.
+  if (!coderAllowed) wants.delete("coder");
   const connected = cfg.connected;
   let dataFindings = "", webFindings = "", coderFindings = "";
+
+  // ROUTE: DIRECT ANSWER -------------------------------------------
+  // The orchestrator selected no worker agents, so this is a simple question
+  // that needs no internal data or web research. Answer it directly with the
+  // orchestrator model, then (if a brand voice is set) pass it through the
+  // brand voice. Skip the whole research / synthesis / critic / coder pipeline.
+  const WORKER_KEYS = ["data", "research", "image", "coder"];
+  const noWorkers = !WORKER_KEYS.some(k => wants.has(k));
+  if (noWorkers) {
+    const ansBlock = addBlock("orch", "orchestrator · direct answer", "");
+    let answer = "";
+    try {
+      const r = await callModel({
+        model: cfg.orch.model,
+        system: "You are the ORCHESTRATOR answering the user directly. No worker agents were needed for this request. Answer the user's question clearly and accurately from your own knowledge and any earlier conversation context provided. Output plain markdown prose only. Do not produce HTML, code, or agent scaffolding.",
+        user: memory + task,
+        temperature: cfg.orch.temp
+      });
+      answer = r.content;
+      finalDeliverable = answer;
+      logStep("orchestrator.direct_answer", r, {});
+      finishBlock(ansBlock, r.content, r);
+    } catch (e) { failBlock(ansBlock, e.message); return; }
+
+    // brand voice rewrite — only when a voice prompt is actually set, so a
+    // plain answer is not distorted by an empty-voice rewrite.
+    if (cfg.voice && (cfg.voice.system || "").trim()) {
+      const vBlock = addBlock("voice", "brand voice · final answer", "");
+      try {
+        const r = await callModel({
+          model: cfg.voice.model,
+          system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact. Output prose only. Do NOT produce HTML, code, or a web page.)",
+          user: answer,
+          temperature: cfg.voice.temp
+        });
+        finalDeliverable = r.content;
+        logStep("brand_voice", r, {});
+        finishBlock(vBlock, r.content, r);
+      } catch (e) { failBlock(vBlock, e.message); logStep("brand_voice", null, { error: e.message }); }
+    }
+    return;   // finally block still runs and persists the deliverable
+  }
 
   // 2) WORKER AGENTS (parallel) — run only if the orchestrator picked
   //    them AND they're connected in the connections box
