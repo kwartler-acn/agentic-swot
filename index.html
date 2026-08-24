@@ -872,7 +872,7 @@ function updateOrchConnections() {
     const lines = CONN_AGENTS.filter(a => keys.includes(a.key))
       .map(a => `- "${a.key}": ${a.desc}`).join("\n");
     const sep = base ? "\n\n" : "";   // only separate from the student's text if there is any
-    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML.\n${CONN_CLOSE}`;
+    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder — it will render the previous result (with its citations) and re-gathering with data/research is unnecessary and wrong.\n${CONN_CLOSE}`;
   }
   p.value = base;
   saveField("p-orch");
@@ -1129,6 +1129,7 @@ function appendExport(runLog) {
 let running = false;
 let savedConfig = null;   // the locked-in setup snapshot; set by "save agentic setup"
 let lastDeliverable = ""; // previous turn's final output — carried into the next run as memory (resets on refresh)
+let lastCitations = [];   // previous turn's researcher citations — so a later "render as HTML" turn keeps sources
 
 async function run() {
   if (running) return;
@@ -1160,6 +1161,7 @@ async function run() {
     }));
 
   let finalDeliverable = "";             // this run's final output, carried into the next turn
+  let allCitations = [];                 // researcher citations (hoisted so the finally block can persist them)
   try {
   // 1) ORCHESTRATOR -> plan + agent selection ----------------------
   const orchBlock = addBlock("orch", "orchestrator · plan", "");
@@ -1206,7 +1208,6 @@ async function run() {
   const wants = new Set(plan.agents || ["data","research"]);
   const connected = cfg.connected;
   let dataFindings = "", webFindings = "", coderFindings = "";
-  let allCitations = [];   // researcher citations — carried into the final HTML coder step
 
   // 2) WORKER AGENTS (parallel) — run only if the orchestrator picked
   //    them AND they're connected in the connections box
@@ -1226,7 +1227,7 @@ async function run() {
         const r = await callModel({
           model: cfg.data.model,
           system: cfg.data.system,
-          user: memory + `Subject/task: ${task}\n\nRAW INTERNAL DATA:\n${corpus}`,
+          user: memory + `Subject/task: ${task}\n\nReport your findings as concise prose or markdown notes only. Do NOT output HTML, code, or a full web page even if the task asks for one — a later coder step handles any rendering.\n\nRAW INTERNAL DATA:\n${corpus}`,
           temperature: cfg.data.temp
         });
         dataFindings = r.content;
@@ -1243,7 +1244,7 @@ async function run() {
         const r = await callModel({
           model: cfg.resp.model,
           system: cfg.resp.system,
-          user: memory + `Analyze the external environment for: ${task}`,
+          user: memory + `Analyze the external environment for: ${task}\n\nReport your findings as concise prose or markdown notes with citations. Do NOT output HTML, code, or a full web page even if the task asks for one — a later coder step handles any rendering.`,
           temperature: cfg.resp.temp
         });
         const cites = extractCitations(r.received);
@@ -1313,7 +1314,7 @@ async function run() {
   try {
     const r = await callModel({
       model: cfg.orch.model,
-      system: "You are the ORCHESTRATOR. Combine the agent findings into one clear deliverable for the user's task. If the task is a SWOT analysis, use four labeled sections (Strengths, Weaknesses, Opportunities, Threats); otherwise synthesize the findings into a coherent response. Use only the findings provided.",
+      system: "You are the ORCHESTRATOR. Combine the agent findings into one clear deliverable for the user's task. If the task is a SWOT analysis, use four labeled sections (Strengths, Weaknesses, Opportunities, Threats); otherwise synthesize the findings into a coherent response. Use only the findings provided. Preserve any [n] citation markers from the findings. Output plain markdown prose only — never HTML, code, or a full web page, even if the task asks for a webpage; a later coder step handles rendering.",
       user: memory + `Task: ${task}\n\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}`,
       temperature: cfg.orch.temp
     });
@@ -1392,7 +1393,7 @@ async function run() {
   try {
     const r = await callModel({
       model: cfg.voice.model,
-      system: cfg.voice.system,
+      system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact and any [n] citation markers. Output prose only — do NOT produce HTML, code, or a web page.)",
       user: report,
       temperature: cfg.voice.temp
     });
@@ -1409,13 +1410,17 @@ async function run() {
   //    and that HTML becomes the run's final output. With no upstream findings
   //    (a pure code task) it behaves like before: just memory + task.
   if (wants.has("coder") && connected.has("coder")) {
-    const finishedReport = finalDeliverable;   // the voiced, critic-reviewed SWOT (if any)
+    // Prefer THIS turn's freshly synthesized+vetted report; otherwise fall back
+    // to the PREVIOUS turn's deliverable so "now render it as HTML" just formats
+    // what was already gathered and vetted (no need to re-run data/research).
+    const finishedReport = finalDeliverable || lastDeliverable || "";
+    const citations = allCitations.length ? allCitations : lastCitations;
     const b = addBlock("coder", finishedReport ? "coder · final HTML" : "coder · code", cfg.coder.model);
     try {
       let coderUser;
       if (finishedReport) {
-        const srcList = allCitations.length
-          ? allCitations.map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n")
+        const srcList = citations.length
+          ? citations.map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n")
           : "";
         coderUser = memory +
 `Render the following finished SWOT analysis as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
@@ -1438,13 +1443,14 @@ ${srcList ? "\nCITATIONS:\n" + srcList : ""}`;
       });
       coderFindings = r.content;
       finalDeliverable = r.content;   // the HTML is the final output for the exercise
-      logStep("coder", r, { grounded: !!finishedReport, citations: allCitations.length });
+      logStep("coder", r, { grounded: !!finishedReport, citations: citations.length });
       finishBlock(b, r.content, r);
     } catch (e) { failBlock(b, e.message); logStep("coder", null, { error: e.message }); }
   }
   } finally {
     runLog.finished_at = new Date().toISOString();
     if (finalDeliverable) lastDeliverable = finalDeliverable;   // remember for the next turn
+    if (allCitations.length) lastCitations = allCitations;      // remember sources for a later "render as HTML" turn
     $("memChip").hidden = !lastDeliverable;                     // show the memory indicator once active
     appendExport(runLog);
     running = false; $("sendBtn").disabled = false;
