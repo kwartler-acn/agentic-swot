@@ -1376,7 +1376,7 @@ async function run() {
       try {
         const rr = await callModel({
           model: cfg.orch.model,
-          system: "You are the ORCHESTRATOR revising a draft SWOT using critic feedback. Apply the fixes, stay grounded in the findings, and keep the four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Return ONLY the revised report — no preamble.",
+          system: "You are the ORCHESTRATOR revising a draft SWOT using critic feedback. Apply the fixes, stay grounded in the findings, and keep the four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Preserve any [n] citation markers. Return ONLY the revised report as plain markdown prose — no preamble, and never HTML, code, or a web page even if the task asks for one; a later coder step handles rendering.",
           user: `Task: ${task}\n\nCURRENT DRAFT:\n${report}\n\nCRITIC FEEDBACK (score ${review.score ?? "—"}/10):\n${review.assessment || ""}\n\nFIXES TO APPLY:\n${(review.fixes || []).map(f => "- " + f).join("\n") || "(none listed)"}\n\nSOURCE FINDINGS:\nINTERNAL:\n${dataFindings || "(none)"}\n\nEXTERNAL:\n${webFindings || "(none)"}`,
           temperature: cfg.orch.temp
         });
