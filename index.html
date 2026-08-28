@@ -32,10 +32,80 @@
     --image: #ff00e5;       /* image         · magenta       */
     --critic:#ff5c00;       /* critic        · bright orange */
     --voice: #ff2d78;       /* brand voice   · hot pink      */
+    --visual:#818cf8;       /* brand visual identity · indigo */
+    --qa:    #34d399;       /* code QA       · emerald       */
 
     --radius: 7px;
     --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  }
+
+  /* Light, high-contrast theme (opt-in). Overrides the variables only; the whole
+     UI is variable-driven, so near-black text on white with darkened accents
+     keeps the agent color coding legible while meeting contrast needs. */
+  :root[data-theme="light"] {
+    --bg:        #ffffff;
+    --panel:     #f3f4f6;
+    --card:      #ffffff;
+    --card-2:    #eef0f3;
+    --border:    rgba(0,0,0,.16);
+    --border-hi: rgba(0,0,0,.30);
+    --fg:        #0b0c0f;
+    --fg-dim:    #3a3d44;
+    --fg-faint:  #64686f;
+
+    --slime:     #7c22c9;
+    --slime-dim: #5f1a9c;
+    --slime-hi:  #6b1fb0;
+    --ok:        #0a8f3c;
+
+    --orch:  #7c22c9;
+    --resp:  #0b6f80;
+    --data:  #4d7c0f;
+    --coder: #9a6700;
+    --image: #b3007a;
+    --critic:#c2410c;
+    --voice: #be123c;
+    --visual:#4338ca;
+    --qa:    #047857;
+  }
+
+  /* header controls: font stepper + theme toggle */
+  .hctl { display: flex; align-items: center; gap: 6px; margin-right: 10px; }
+  .hbtn {
+    background: transparent; border: 1px solid var(--border-hi); border-radius: 6px;
+    color: var(--fg-dim); font-family: var(--sans); font-size: 11px; font-weight: 600;
+    padding: 4px 9px; cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+  }
+  .hbtn:hover { color: var(--fg); border-color: var(--slime); }
+
+  /* custom-voice "include in image" toggle */
+  .brandimg-row { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; }
+  .brandimg-chk { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-dim); cursor: pointer; }
+  .brandimg-info {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-hi);
+    color: var(--fg-faint); font-size: 10px; font-weight: 700; cursor: help; flex: none;
+  }
+  /* info icon in a card head: the card's description on hover */
+  .hint-i {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-hi);
+    color: var(--fg-faint); font-size: 10px; font-weight: 700; font-style: normal;
+    cursor: help; flex: none; margin-left: 4px;
+  }
+  .hint-i:hover { color: var(--fg); border-color: var(--slime); }
+  /* image cache indicator: green when an image is saved, red when not */
+  .cachedot { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-faint); flex: none; }
+  .cachedot.on  { background: var(--ok); }
+  .cachedot.off { background: #ef4444; }
+
+  /* custom tooltip (native title tooltips are unreliable, so we render our own) */
+  .tip {
+    position: fixed; z-index: 2000; max-width: 300px; display: none;
+    background: #14161c; color: #e6e6ea; border: 1px solid var(--border-hi);
+    border-radius: 6px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45;
+    font-family: var(--sans); box-shadow: 0 6px 24px rgba(0,0,0,.45); pointer-events: none;
   }
 
   * { box-sizing: border-box; }
@@ -171,6 +241,33 @@
   }
   textarea { min-height: 60px; line-height: 1.55; }
 
+  /* "enlarge" affordance under each prompt textarea + the shared editor modal */
+  .expand-btn {
+    display: inline-block; margin-top: 4px; background: transparent; border: none;
+    color: var(--fg-faint); font-size: 10.5px; font-family: var(--sans); cursor: pointer; padding: 2px 0;
+  }
+  .expand-btn:hover { color: var(--slime); }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal-panel {
+    background: var(--card); border: 1px solid var(--border-hi); border-radius: var(--radius);
+    width: min(820px, 100%); max-height: 88vh; display: flex; flex-direction: column;
+    box-shadow: 0 12px 48px rgba(0,0,0,.5);
+  }
+  .modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .modal-title { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .modal-x { margin-left: auto; background: transparent; border: none; color: var(--fg-dim); font-size: 15px; cursor: pointer; line-height: 1; }
+  .modal-x:hover { color: var(--fg); }
+  .modal-panel textarea {
+    flex: 1; min-height: 52vh; margin: 0; border: none; border-radius: 0; resize: none; outline: none;
+    background: var(--card); color: var(--fg); font-family: var(--mono); font-size: 13px; line-height: 1.5; padding: 16px;
+  }
+  .modal-panel textarea:focus { box-shadow: none; }
+  .modal-foot { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border); }
+
   /* checkboxes are not full-width text fields */
   input[type="checkbox"] {
     width: auto; height: auto; padding: 0; margin: 0; flex: none;
@@ -272,6 +369,11 @@
   .codelang { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint); font-family: var(--mono); }
   .codecopy { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: 10px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
   .codecopy:hover { color: var(--slime); border-color: color-mix(in srgb, var(--slime) 55%, transparent); }
+  /* group the code-box controls on the right so they stay together */
+  .codebtns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  /* download + open button, coder-yellow accent, matches the copy button */
+  .codedl { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: 10px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
+  .codedl:hover { color: var(--coder); border-color: color-mix(in srgb, var(--coder) 55%, transparent); }
   .codebox pre { margin: 0; padding: 10px; background: #060608; font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--fg); overflow-x: auto; max-height: 340px; }
   .codebox pre[hidden] { display: none; }
 
@@ -414,6 +516,11 @@
     <button class="navtoggle" id="toggleCanvas" title="Collapse setup panel" aria-label="Toggle setup panel"><span class="navtoggle-ico">⟨</span></button>
   </div>
   <span class="spacer"></span>
+  <div class="hctl">
+    <button class="hbtn" id="fontDown" title="Smaller text" aria-label="Decrease text size">A-</button>
+    <button class="hbtn" id="fontUp" title="Larger text" aria-label="Increase text size">A+</button>
+    <button class="hbtn" id="themeToggle" title="Toggle light / dark mode" aria-label="Toggle light or dark mode">light</button>
+  </div>
   <span class="hint" id="keyhint">no api key set</span>
 </header>
 
@@ -465,24 +572,6 @@
           <label class="fld">temp <span class="range-out" id="to-orch">0.3</span></label>
           <input type="range" id="t-orch" min="0" max="1" step="0.1" value="0.3">
         </div>
-      </div>
-    </div>
-
-    <!-- Connections -->
-    <div class="card" id="c-connect" style="--acc: var(--slime)">
-      <div class="head" data-toggle>
-        <span class="tag">connections</span>
-        <span class="role">wire agents → orchestrator</span>
-        <span class="spacer"></span>
-        <span class="caret">▾</span>
-      </div>
-      <div class="body">
-        <label class="conn"><input type="checkbox" id="conn-research" checked /><span class="swatch" style="--c: var(--resp)"></span>researcher<span class="r">live web</span></label>
-        <label class="conn"><input type="checkbox" id="conn-data" checked /><span class="swatch" style="--c: var(--data)"></span>data connector<span class="r">your data</span></label>
-        <label class="conn"><input type="checkbox" id="conn-coder" /><span class="swatch" style="--c: var(--coder)"></span>coder<span class="r">code tasks</span></label>
-        <label class="conn"><input type="checkbox" id="conn-image" /><span class="swatch" style="--c: var(--image)"></span>image<span class="r">generate visual</span></label>
-        <label class="conn"><input type="checkbox" id="conn-critic" /><span class="swatch" style="--c: var(--critic)"></span>critic<span class="r">reviews the report</span></label>
-        <div class="conn-note">Checked agents get described in the orchestrator's system prompt so it knows it can delegate to them.</div>
       </div>
     </div>
 
@@ -538,48 +627,83 @@
       </div>
     </div>
 
-    <!-- Coder -->
-    <div class="card" id="c-coder" style="--acc: var(--coder)">
-      <div class="head" data-toggle>
-        <span class="tag">coder</span>
-        <span class="role">code tasks</span>
-        <span class="spacer"></span>
-        <span class="status ok"></span>
-        <span class="caret">▾</span>
-      </div>
-      <div class="body">
-        <label class="fld">System prompt</label>
-        <textarea id="p-coder"></textarea>
-        <div class="adv-toggle" data-adv>▸ advanced</div>
-        <div class="adv">
-          <div class="row2">
-            <div><label class="fld">model</label><input type="text" id="m-coder" value="moonshotai/kimi-k2.7-code"></div>
-            <div><label class="fld">temp <span class="range-out" id="to-coder">0.2</span></label><input type="range" id="t-coder" min="0" max="1" step="0.1" value="0.2"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Image -->
     <div class="card" id="c-image" style="--acc: var(--image)">
       <div class="head" data-toggle>
         <span class="tag">image</span>
         <span class="role">generate visual</span>
         <span class="spacer"></span>
+        <span class="cachedot off" id="imgCacheDot" title="no image cached"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">Style prompt <span style="color:var(--fg-faint)">(optional, prepended to the request)</span></label>
+        <textarea id="p-image" placeholder="e.g. minimalist flat vector illustration, muted palette"></textarea>
+        <label class="fld">model <span class="fixed-tag">fixed</span></label>
+        <input type="text" id="m-image" value="qwen/qwen-image-3" readonly title="This model is fixed for the exercise" />
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <button type="button" class="exp ghost" id="clearImgBtn" disabled>clear cached image</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brand voice -->
+    <div class="card" id="c-voice" style="--acc: var(--voice)">
+      <div class="head" data-toggle>
+        <span class="tag">brand voice</span>
+        <span class="role">final rewrite</span>
+        <span class="hint-i" title="Rewrites the finished report in a chosen tone or brand voice. Runs after the critic, before the coder. Pick a preset or write your own. A built-in preset also styles the image agent; a custom voice can too via the toggle below.">i</span>
+        <span class="spacer"></span>
         <span class="status ok"></span>
         <span class="caret">▾</span>
       </div>
       <div class="body">
-        <label class="fld">Style prompt <span style="color:var(--fg-faint)">(optional — prepended to the request)</span></label>
-        <textarea id="p-image" placeholder="e.g. minimalist flat vector illustration, muted palette"></textarea>
-        <label class="fld">model <span class="fixed-tag">fixed</span></label>
-        <input type="text" id="m-image" value="qwen/qwen-image-3" readonly title="This model is fixed for the exercise" />
-        <label class="fld">resolution <span style="color:var(--fg-faint)">(smaller = smaller payload, faster)</span></label>
-        <select id="s-image">
-          <option value="512x512" selected>512 × 512 · small</option>
-          <option value="768x768">768 × 768 · medium</option>
-          <option value="1024x1024">1024 × 1024 · large</option>
+        <label class="fld">Voice preset</label>
+        <select id="voicePreset">
+          <option value="">write your own below, or pick a preset</option>
+          <option value="nfcu">Navy Federal (members, active voice)</option>
+          <option value="pirate">Pirate</option>
+          <option value="consultant">Overly consultant speak</option>
+          <option value="genz">Gen-Z</option>
+          <option value="shakespeare">Shakespeare</option>
         </select>
+        <div class="brandimg-row" id="customBrandRow" hidden>
+          <label class="brandimg-chk"><input type="checkbox" id="imgBrandCustom"> include text and image branding instructions</label>
+          <span class="brandimg-info" title="Your custom voice is text guidance. Turn this on to also feed it to the image agent. Built-in presets already include tailored image branding, so this only applies to a custom voice.">!</span>
+        </div>
+        <label class="fld">System prompt</label>
+        <textarea id="p-voice"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-voice" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-voice">0.8</span></label><input type="range" id="t-voice" min="0" max="1" step="0.1" value="0.8"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brand visual identity -->
+    <div class="card" id="c-visual" style="--acc: var(--visual)">
+      <div class="head" data-toggle>
+        <span class="tag">brand visual identity</span>
+        <span class="role">restyles the HTML</span>
+        <span class="hint-i" title="Runs after the coder: rewrites the page's look and feel (color, type, layout). Loose and thematic by design, and independent of the brand voice, so the two can align or clash. Toggle it in the connections panel.">i</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">System prompt</label>
+        <textarea id="p-visual"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-visual" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-visual">0.7</span></label><input type="range" id="t-visual" min="0" max="1" step="0.1" value="0.7"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -613,34 +737,68 @@
       </div>
     </div>
 
-    <!-- Brand voice -->
-    <div class="card" id="c-voice" style="--acc: var(--voice)">
+    <!-- Coder -->
+    <div class="card" id="c-coder" style="--acc: var(--coder)">
       <div class="head" data-toggle>
-        <span class="tag">brand voice</span>
-        <span class="role">final rewrite</span>
+        <span class="tag">coder</span>
+        <span class="role">code tasks</span>
         <span class="spacer"></span>
         <span class="status ok"></span>
         <span class="caret">▾</span>
       </div>
       <div class="body">
-        <label class="fld">Voice preset</label>
-        <select id="voicePreset">
-          <option value="">— write your own below, or pick a preset —</option>
-          <option value="nfcu">Navy Federal (members, active voice)</option>
-          <option value="a swashbuckling pirate — say ahoy, yer, matey, nautical metaphors">Pirate</option>
-          <option value="overly consultant-speak — dense corporate jargon like 'synergies', 'leverage core competencies', 'circle back', 'move the needle', 'value-add', 'boil the ocean', 'at the end of the day'; buzzword-heavy but keep every fact intact">Overly consultant speak</option>
-          <option value="an extremely online Gen-Z creator — lowercase, slang, but still accurate">Gen-Z</option>
-          <option value="Shakespearean English — thee, thou, iambic flourish">Shakespeare</option>
-        </select>
         <label class="fld">System prompt</label>
-        <textarea id="p-voice"></textarea>
+        <textarea id="p-coder"></textarea>
         <div class="adv-toggle" data-adv>▸ advanced</div>
         <div class="adv">
           <div class="row2">
-            <div><label class="fld">model</label><input type="text" id="m-voice" placeholder="(default)"></div>
-            <div><label class="fld">temp <span class="range-out" id="to-voice">0.8</span></label><input type="range" id="t-voice" min="0" max="1" step="0.1" value="0.8"></div>
+            <div><label class="fld">model</label><input type="text" id="m-coder" value="moonshotai/kimi-k2.7-code"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-coder">0.2</span></label><input type="range" id="t-coder" min="0" max="1" step="0.1" value="0.2"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Code QA -->
+    <div class="card" id="c-qa" style="--acc: var(--qa)">
+      <div class="head" data-toggle>
+        <span class="tag">code QA</span>
+        <span class="role">reviews + repairs the HTML</span>
+        <span class="hint-i" title="Automatic final pass: validates and repairs the HTML in case the restyle broke it. Fixes structure only, never content or design. Toggle it in the connections panel.">i</span>
+        <span class="spacer"></span>
+        <span class="status ok"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="fld">System prompt</label>
+        <textarea id="p-qa"></textarea>
+        <div class="adv-toggle" data-adv>▸ advanced</div>
+        <div class="adv">
+          <div class="row2">
+            <div><label class="fld">model</label><input type="text" id="m-qa" placeholder="(default)"></div>
+            <div><label class="fld">temp <span class="range-out" id="to-qa">0.1</span></label><input type="range" id="t-qa" min="0" max="1" step="0.1" value="0.1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connections -->
+    <div class="card" id="c-connect" style="--acc: var(--slime)">
+      <div class="head" data-toggle>
+        <span class="tag">connections</span>
+        <span class="role">wire agents → orchestrator</span>
+        <span class="spacer"></span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="body">
+        <label class="conn"><input type="checkbox" id="conn-research" checked /><span class="swatch" style="--c: var(--resp)"></span>researcher<span class="r">live web</span></label>
+        <label class="conn"><input type="checkbox" id="conn-data" checked /><span class="swatch" style="--c: var(--data)"></span>data connector<span class="r">your data</span></label>
+        <label class="conn"><input type="checkbox" id="conn-coder" /><span class="swatch" style="--c: var(--coder)"></span>coder<span class="r">code tasks</span></label>
+        <label class="conn"><input type="checkbox" id="conn-image" /><span class="swatch" style="--c: var(--image)"></span>image<span class="r">generate visual</span></label>
+        <label class="conn"><input type="checkbox" id="conn-critic" /><span class="swatch" style="--c: var(--critic)"></span>critic<span class="r">reviews the report</span></label>
+        <label class="conn"><input type="checkbox" id="en-visual" checked /><span class="swatch" style="--c: var(--visual)"></span>brand visual identity<span class="r">restyles HTML</span></label>
+        <label class="conn"><input type="checkbox" id="en-qa" checked /><span class="swatch" style="--c: var(--qa)"></span>code QA<span class="r">reviews HTML</span></label>
+        <div class="conn-note">Checked agents get described in the orchestrator's system prompt so it knows it can delegate to them. Brand visual identity and code QA run automatically after the coder when checked.</div>
       </div>
     </div>
 
@@ -648,6 +806,7 @@
       <button class="save" id="saveBtn">save agentic setup</button>
       <div class="save-note" id="saveNote">the chat unlocks once you save your setup</div>
     </div>
+
   </section>
 
   <!-- ============ RIGHT: CHAT ============ -->
@@ -663,7 +822,9 @@
         <span style="color:var(--data)">lime</span> = your data → Strengths &amp; Weaknesses &nbsp;·&nbsp;
         <span style="color:var(--resp)">cyan</span> = live web → Opportunities &amp; Threats &nbsp;·&nbsp;
         <span style="color:var(--critic)">orange</span> = critic review &nbsp;·&nbsp;
-        <span style="color:var(--voice)">pink</span> = brand voice.
+        <span style="color:var(--voice)">pink</span> = brand voice &nbsp;·&nbsp;
+        <span style="color:var(--visual)">indigo</span> = visual identity &nbsp;·&nbsp;
+        <span style="color:var(--qa)">green</span> = code QA.
       </div>
     </div>
     <div class="memchip" id="memChip" hidden><span>🧠</span> remembering only the last result</div>
@@ -674,6 +835,20 @@
   </section>
 </main>
 
+<!-- Shared large editor for any system prompt -->
+<div class="modal-backdrop" id="promptModal" hidden>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
+    <div class="modal-head">
+      <span class="modal-title" id="promptModalTitle">Edit prompt</span>
+      <button type="button" class="modal-x" id="promptModalClose" aria-label="Close editor">✕</button>
+    </div>
+    <textarea id="promptModalText" spellcheck="false"></textarea>
+    <div class="modal-foot">
+      <button type="button" class="save" id="promptModalDone">done</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =====================================================================
    Agentic-SWOT — single-file agent orchestration teaching tool.
@@ -682,6 +857,14 @@
    ===================================================================== */
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+/* Fail-safe localStorage. Some environments (file:// pages in Safari/Firefox,
+   private mode, storage disabled) THROW on any localStorage access. Unguarded,
+   that would abort startup before the default prompts get seeded. These wrappers
+   degrade to "no persistence" instead of breaking the app. */
+function lsGet(k)    { try { return localStorage.getItem(k); } catch (_) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+function lsRemove(k) { try { localStorage.removeItem(k); } catch (_) {} }
 
 /* ---- defaults ------------------------------------------------------
    Most system prompts are intentionally BLANK — students write them.
@@ -700,6 +883,49 @@ accomplish the user's request.
 - If the task is not actually a coding task, say so briefly instead of
   inventing code.`,
 
+  "p-visual":
+`You are the BRAND VISUAL IDENTITY agent. You receive a finished HTML page and
+rewrite it so it looks intentionally designed and on-brand. Apply a cohesive look:
+color palette, typography, spacing, and simple layout structure. Improvise freely;
+a distinctive, thematically consistent look matters more than restraint.
+
+Theme priority:
+- If a THEME DIRECTION is provided with the page, make it the driving aesthetic
+  (palette, typography, texture, motifs) and blend it with the brand palette below
+  into one cohesive, still-readable design. Commit fully to whatever aesthetic the
+  theme describes rather than defaulting to plain colors.
+- If no theme direction is given, infer one from the page's subject, and fall back
+  to the brand palette.
+
+Rules:
+- Return the COMPLETE HTML page in a single \`\`\`html fenced block. All CSS
+  inline or in a <style> tag. No external dependencies.
+- Change styling and layout only. Do not alter the wording, facts, section
+  structure, links, or the Sources list.
+- PRESERVE every <img> tag exactly, including any src that is a placeholder token
+  such as __NFCU_LOGO_DATA_URI__ or __SWOT_IMAGE_DATA_URI__. Do not remove,
+  rename, or relocate them out of the document.
+- Keep the white pill wrapper around the logo so it reads on any background.
+
+Brand palette to blend with (or fall back to when no theme is given): primary navy
+#0F3D70, accent #ED780F, ink #14213D, muted grey #5B6472, surface #FFFFFF.`,
+
+  "p-qa":
+`You are the CODE QA agent, the final reviewer of an HTML page that was just
+restyled. Make sure it is valid, complete, and renders correctly, without
+changing its content or design.
+
+Rules:
+- Return the COMPLETE corrected HTML page in a single \`\`\`html fenced block.
+- Fix only real problems: unclosed or mismatched tags, invalid nesting, broken
+  or duplicated CSS, malformed attributes, and <style> or <script> blocks that
+  were cut off. Ensure there is one well-formed <html>, <head>, and <body>.
+- Do NOT change the visible text, facts, layout intent, colors, or the Sources
+  list, and do NOT add features.
+- PRESERVE every <img> tag exactly, including placeholder src values such as
+  __NFCU_LOGO_DATA_URI__ or __SWOT_IMAGE_DATA_URI__.
+- If the page is already valid, return it unchanged, still in one \`\`\`html block.`,
+
   "defaultModel": "google/gemini-3.5-flash-lite",
   "m-orch": "openai/gpt-5.4-nano",
   "m-resp": "perplexity/sonar",
@@ -711,22 +937,54 @@ accomplish the user's request.
    Not seeded into the textarea on load, so the field starts blank. */
 const VOICE_TEMPLATE =
 `You are the BRAND VOICE editor. Rewrite the report entirely in the voice of {VOICE}.
-Keep every fact and all four SWOT sections (Strengths, Weaknesses, Opportunities,
-Threats) intact. Change only the tone, never the content.`;
+Keep every fact and the report's existing structure and sections intact. Change only
+the tone, never the content or the structure. Do not add sections that are not
+already present (for example, do not add a SWOT unless the report already is one).`;
+const voiceText = d => VOICE_TEMPLATE.replace("{VOICE}", d);
 
-/* Full-text brand-voice presets. Unlike the {VOICE} presets above, these are
-   complete system prompts (not substituted into VOICE_TEMPLATE), so they can
-   carry real brand rules and stay free of SWOT-specific wording. That lets the
-   same voice work on a full SWOT report AND on a plain direct answer. */
+/* Brand-voice presets. Each has a `text` (the voice system prompt that rewrites
+   the report) and an `image` (a hard-coded VISUAL branding instruction fed to
+   the image agent). Keeping the image instruction separate means the picture
+   gets purpose-written visual guidance instead of the text-editing rules, which
+   is far less noisy than pasting the whole voice prompt into an image request. */
 const VOICE_PRESETS = {
-  nfcu:
+  nfcu: {
+    label: "Navy Federal (members, active voice)",
+    text:
 `You are the BRAND VOICE editor writing in Navy Federal Credit Union's voice.
 Rewrite the text using these rules, changing tone and wording only, never the facts:
 - Use active voice throughout. Recast passive constructions so the actor performs the verb.
 - Never refer to anyone as a "customer", "client", or "consumer". Always use "member" or "members".
 - Keep the tone clear, direct, and respectful, consistent with a member-owned, not-for-profit credit union.
 - Preserve every fact, figure, and any [n] citation markers. If the source has labeled sections, keep them.
-Output prose only. Do not add HTML, code, or a web page.`
+Output prose only. Do not add HTML, code, or a web page.`,
+    image:
+`Navy Federal Credit Union brand cues: deep navy blue accents, clean and professional, subtle nautical or military heritage motifs, a trustworthy corporate mood.`
+  },
+  pirate: {
+    label: "Pirate",
+    text: voiceText("a swashbuckling pirate: say ahoy, yer, matey, and lean on nautical metaphors"),
+    image:
+`swashbuckling pirate motifs: tall ships, sails, rope, compass, anchor, treasure maps, an adventurous seafaring mood.`
+  },
+  consultant: {
+    label: "Overly consultant speak",
+    text: voiceText("overly consultant-speak: dense corporate jargon like 'synergies', 'leverage core competencies', 'circle back', 'move the needle', 'value-add', 'boil the ocean', 'at the end of the day'; buzzword heavy but keep every fact intact"),
+    image:
+`corporate consulting motifs: clean geometric shapes, upward arrows and simple charts, a polished boardroom mood.`
+  },
+  genz: {
+    label: "Gen-Z",
+    text: voiceText("an extremely online Gen-Z creator: lowercase, slang, but still accurate"),
+    image:
+`extremely online Gen-Z mood: playful, bold, sticker and meme energy, expressive and casual.`
+  },
+  shakespeare: {
+    label: "Shakespeare",
+    text: voiceText("Shakespearean English: thee, thou, and an iambic flourish"),
+    image:
+`Elizabethan and Shakespearean motifs: Renaissance detail, period costume and staging, theatrical drama.`
+  }
 };
 
 /* Example critic system prompts for the dropdown. Like the brand-voice presets,
@@ -774,14 +1032,15 @@ const trace = $("trace");
 const PERSIST = ["apiKey","defaultModel",
                  "m-orch","m-resp","m-data","m-coder","m-critic","m-voice",
                  "t-orch","t-resp","t-data","t-coder","t-critic","t-voice"];
-const EPHEMERAL = new Set(["p-orch","p-resp","p-data","p-coder","p-image","p-critic","p-voice","criticPreset","voicePreset"]);
+const EPHEMERAL = new Set(["p-orch","p-resp","p-data","p-coder","p-image","p-critic","p-voice","p-visual","p-qa","criticPreset","voicePreset"]);
 
 function loadState() {
   // drop any previously written system prompts — fresh slate every refresh
-  EPHEMERAL.forEach(id => localStorage.removeItem("gbswot2:" + id));
+  EPHEMERAL.forEach(id => lsRemove("gbswot2:" + id));
+  clearImageCache();   // fresh slate on refresh: drop any cached image too
   PERSIST.forEach(id => {
     const el = $(id); if (!el) return;
-    const saved = localStorage.getItem("gbswot2:" + id);
+    const saved = lsGet("gbswot2:" + id);
     if (saved !== null) el.value = saved;
     else if (DEFAULTS[id] !== undefined) el.value = DEFAULTS[id];
   });
@@ -793,8 +1052,10 @@ function loadState() {
   refreshConnStatus();
   syncRanges();
   loadConn();
+  loadEnables();
   updateOrchConnections();
-  setCanvasCollapsed(localStorage.getItem("gbswot2:canvasCollapsed") === "1");
+  updateCustomBrandToggle();
+  setCanvasCollapsed(lsGet("gbswot2:canvasCollapsed") === "1");
   // chat stays locked until the student saves their agentic setup
   $("taskInput").disabled = true; $("sendBtn").disabled = true;
 }
@@ -817,7 +1078,7 @@ const DATA_SNAPSHOTS = {
 };
 function saveField(id) {
   if (EPHEMERAL.has(id)) return;              // system prompts + preset never persist
-  const el = $(id); if (el) localStorage.setItem("gbswot2:" + id, el.value);
+  const el = $(id); if (el) lsSet("gbswot2:" + id, el.value);
 }
 PERSIST.forEach(id => {
   const el = $(id);
@@ -834,6 +1095,70 @@ function refreshConnStatus() {
 /* ---- collapse / advanced / range UI -------------------------------- */
 document.querySelectorAll("[data-toggle]").forEach(h =>
   h.addEventListener("click", () => h.closest(".card").classList.toggle("collapsed")));
+document.querySelectorAll(".hint-i").forEach(el => el.addEventListener("click", e => e.stopPropagation()));
+
+/* ---- custom tooltips ----------------------------------------------
+   Native `title` tooltips are unreliable across browsers/OSes, so we render
+   our own: read each target's title into data-tip, drop the title (so the
+   native one never competes), and show a positioned bubble on hover/focus. */
+(function initTooltips() {
+  const tip = document.createElement("div");
+  tip.className = "tip"; tip.setAttribute("role", "tooltip");
+  document.body.appendChild(tip);
+  function show(el) {
+    const text = el.getAttribute("data-tip"); if (!text) return;
+    tip.textContent = text; tip.style.display = "block";
+    const r = el.getBoundingClientRect();
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = Math.max(8, Math.min(r.left + r.width / 2 - tw / 2, window.innerWidth - tw - 8));
+    let top = r.bottom + 8;
+    if (top + th > window.innerHeight - 8) top = r.top - th - 8;   // flip above if no room below
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+  }
+  function hide() { tip.style.display = "none"; }
+  document.querySelectorAll(".hint-i, .brandimg-info, .cachedot").forEach(el => {
+    const t = el.getAttribute("title");
+    if (t) { el.setAttribute("data-tip", t); el.removeAttribute("title"); }
+    el.setAttribute("tabindex", "0");
+    el.addEventListener("mouseenter", () => show(el));
+    el.addEventListener("mouseleave", hide);
+    el.addEventListener("focus", () => show(el));
+    el.addEventListener("blur", hide);
+  });
+})();
+
+/* ---- shared large prompt editor ------------------------------------
+   Each system-prompt textarea gets an "enlarge" button that opens one big
+   modal editor. The modal is a bigger VIEW of the same field: edits sync back
+   live, so persistence, ephemeral-on-refresh, and the save snapshot are all
+   untouched. Closing (done / X / backdrop / Escape) just hides it. */
+let promptModalTarget = null;
+function openPromptModal(ta) {
+  promptModalTarget = ta;
+  const card = ta.closest(".card");
+  const tag = card && card.querySelector(".tag");
+  $("promptModalTitle").textContent = "Edit " + (tag ? tag.textContent : "prompt") + " prompt";
+  $("promptModalText").value = ta.value;
+  $("promptModal").hidden = false;
+  $("promptModalText").focus();
+}
+function closePromptModal() { $("promptModal").hidden = true; promptModalTarget = null; }
+$("promptModalText").addEventListener("input", () => {
+  if (!promptModalTarget) return;
+  promptModalTarget.value = $("promptModalText").value;
+  promptModalTarget.dispatchEvent(new Event("input", { bubbles: true }));   // fire any autosave listeners
+});
+$("promptModalClose").addEventListener("click", closePromptModal);
+$("promptModalDone").addEventListener("click", closePromptModal);
+$("promptModal").addEventListener("click", e => { if (e.target === $("promptModal")) closePromptModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("promptModal").hidden) closePromptModal(); });
+document.querySelectorAll('textarea[id^="p-"]').forEach(ta => {
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "expand-btn"; btn.textContent = "⤢ enlarge";
+  btn.addEventListener("click", () => openPromptModal(ta));
+  ta.insertAdjacentElement("afterend", btn);
+});
+
 document.querySelectorAll("[data-adv]").forEach(t =>
   t.addEventListener("click", () => {
     const adv = t.nextElementSibling;
@@ -841,20 +1166,51 @@ document.querySelectorAll("[data-adv]").forEach(t =>
     t.textContent = adv.classList.contains("open") ? "▾ advanced" : "▸ advanced";
   }));
 function syncRanges() {
-  ["orch","resp","data","coder","critic","voice"].forEach(a => {
+  ["orch","resp","data","coder","critic","voice","visual","qa"].forEach(a => {
     const r = $("t-"+a), out = $("to-"+a);
     if (r && out) { out.textContent = r.value; r.addEventListener("input", () => out.textContent = r.value); }
   });
 }
 
-/* voice preset -> fills the (otherwise blank) brand-voice prompt.
-   Known keys in VOICE_PRESETS are full system prompts; anything else is a
-   {VOICE} descriptor substituted into the generic SWOT template. */
+/* manual control for the single cached image */
+if ($("clearImgBtn")) $("clearImgBtn").addEventListener("click", clearImageCache);
+
+/* ---- readability: theme + font scale (both persist across sessions) --- */
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  const b = $("themeToggle"); if (b) b.textContent = t === "light" ? "dark" : "light";
+}
+function setTheme(t) { try { lsSet("gbswot2:theme", t); } catch (_) {} applyTheme(t); }
+function getTheme() { try { return lsGet("gbswot2:theme") === "light" ? "light" : "dark"; } catch (_) { return "dark"; } }
+if ($("themeToggle")) $("themeToggle").addEventListener("click", () => setTheme(getTheme() === "light" ? "dark" : "light"));
+applyTheme(getTheme());
+
+const FONT_MIN = 0.9, FONT_MAX = 1.6, FONT_STEP = 0.1;
+function applyFontScale(s) { const m = document.querySelector("main"); if (m) m.style.zoom = String(s); }
+function getFontScale() { const v = parseFloat(lsGet("gbswot2:fontScale")); return (v && !isNaN(v)) ? v : 1; }
+function setFontScale(s) {
+  s = Math.min(FONT_MAX, Math.max(FONT_MIN, Math.round(s * 10) / 10));
+  try { lsSet("gbswot2:fontScale", String(s)); } catch (_) {}
+  applyFontScale(s);
+}
+if ($("fontUp")) $("fontUp").addEventListener("click", () => setFontScale(getFontScale() + FONT_STEP));
+if ($("fontDown")) $("fontDown").addEventListener("click", () => setFontScale(getFontScale() - FONT_STEP));
+applyFontScale(getFontScale());
+
+/* voice preset -> fills the (otherwise blank) brand-voice prompt with the
+   preset's text. Built-in presets also carry a hard-coded image branding var
+   (used by the image agent). The custom toggle shows only when no preset is
+   picked, i.e. the user is writing their own voice. */
+function updateCustomBrandToggle() {
+  const row = $("customBrandRow");
+  if (row) row.hidden = !!$("voicePreset").value;   // hide when a built-in preset is selected
+}
 $("voicePreset").addEventListener("change", () => {
   const v = $("voicePreset").value;
+  updateCustomBrandToggle();
   if (!v) return;                       // blank option: leave whatever the student typed
-  $("p-voice").value = VOICE_PRESETS[v] ? VOICE_PRESETS[v] : VOICE_TEMPLATE.replace("{VOICE}", v);
-  saveField("p-voice");
+  const p = VOICE_PRESETS[v];
+  if (p) { $("p-voice").value = p.text; saveField("p-voice"); }
 });
 
 /* critic preset -> fills the (otherwise blank) critic prompt */
@@ -890,13 +1246,29 @@ function updateOrchConnections() {
     const lines = CONN_AGENTS.filter(a => keys.includes(a.key))
       .map(a => `- "${a.key}": ${a.desc}`).join("\n");
     const sep = base ? "\n\n" : "";   // only separate from the student's text if there is any
-    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations — so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder — it will render the previous result (with its citations) and re-gathering with data/research is unnecessary and wrong.\n\nDIRECT ANSWER ROUTE: if the user's message is a simple question that needs no internal company data and no web research (for example a definitional question, a quick clarification, or small talk), return an EMPTY "agents" array ([]). The system will then answer the question directly and apply the brand voice, with no worker agents. Only select agents when the task genuinely needs them.\n${CONN_CLOSE}`;
+    // The coder's utility agents (brand visual identity, code QA) are selectable
+    // too when enabled; tell the orchestrator to co-select them with the coder so
+    // its plan reflects the full code pipeline it is actually invoking.
+    const codeUtils = [];
+    if (keys.includes("coder")) {
+      if ($("en-visual") && $("en-visual").checked) codeUtils.push('"brand_visual" (restyles the finished page for brand visual identity)');
+      if ($("en-qa") && $("en-qa").checked) codeUtils.push('"code_qa" (validates and repairs the finished page)');
+    }
+    const utilLine = codeUtils.length
+      ? `\n\nWhenever you select "coder", ALSO include ${codeUtils.join(" and ")} in the agents array. These utility agents run automatically after the coder to finish and verify the page.`
+      : "";
+    base += `${sep}${CONN_OPEN}\nYou can delegate to these connected agents by putting their keys in the "agents" array of your JSON plan:\n${lines}\n\nGuidance: the data, researcher and image agents run in PARALLEL and do NOT see each other's output within a single turn. The coder runs LAST, AFTER synthesis and critic review, and it receives the finished SWOT plus the researcher's citations, so it can render the whole reviewed analysis (with sources) as the final deliverable. For a from-scratch request like "build an HTML SWOT of <subject>", select data, research AND coder together this turn: data/research gather the findings, and the coder turns the finished, cited report into the final HTML. BUT if the analysis was ALREADY produced in a previous turn and the user only asks to render, format, restyle, or "make an HTML page" of it, select ONLY coder (it will render the previous result, with its citations) and re-gathering with data/research is unnecessary and wrong.\n\nDIRECT ANSWER ROUTE: if the user's message is a simple question that needs no internal company data and no web research (for example a definitional question, a quick clarification, or small talk), return an EMPTY "agents" array ([]). The system will then answer the question directly and apply the brand voice, with no worker agents. Only select agents when the task genuinely needs them.${utilLine}\n${CONN_CLOSE}`;
   }
   p.value = base;
   saveField("p-orch");
 }
-function saveConn() { CONN_AGENTS.forEach(a => localStorage.setItem("gbswot2:" + a.id, $(a.id).checked ? "1" : "0")); }
-function loadConn() { CONN_AGENTS.forEach(a => { const v = localStorage.getItem("gbswot2:" + a.id); if (v !== null && $(a.id)) $(a.id).checked = v === "1"; }); }
+function saveConn() { CONN_AGENTS.forEach(a => lsSet("gbswot2:" + a.id, $(a.id).checked ? "1" : "0")); }
+function loadConn() { CONN_AGENTS.forEach(a => { const v = lsGet("gbswot2:" + a.id); if (v !== null && $(a.id)) $(a.id).checked = v === "1"; }); }
+/* The two post-coder agents live in the same panel but are not planner-selectable,
+   so they persist on their own rather than through CONN_AGENTS. */
+const ENABLE_IDS = ["en-visual", "en-qa"];
+function loadEnables() { ENABLE_IDS.forEach(id => { const v = lsGet("gbswot2:" + id); if (v !== null && $(id)) $(id).checked = v === "1"; }); }
+ENABLE_IDS.forEach(id => { const el = $(id); if (el) el.addEventListener("change", () => { try { lsSet("gbswot2:" + id, el.checked ? "1" : "0"); } catch (_) {} updateOrchConnections(); }); });
 CONN_AGENTS.forEach(a => {
   const el = $(a.id);
   if (el) el.addEventListener("change", () => { saveConn(); updateOrchConnections(); });
@@ -937,16 +1309,16 @@ async function callModel({ model, system, user, temperature, responseFormat }) {
 async function callImage({ model, prompt, size }) {
   const key = $("apiKey").value.trim();
   if (!key) throw new Error("No OpenRouter API key set.");
-  // size caps the resolution so the returned base64 stays small — a full-res
-  // image can be a multi-hundred-KB blob that gets truncated mid-transfer,
-  // which then blows up JSON.parse below with "Unterminated string in JSON".
-  // response_format:"url" is preferred when the provider supports it: the JSON
-  // then carries a short URL instead of a giant base64 payload.
+  // We REQUEST base64 (b64_json) so the image arrives as bytes we can cache and
+  // embed offline in the coder's HTML. Resolution is capped small (512) to keep
+  // the base64 payload from truncating mid-transfer (which would blow up
+  // JSON.parse below). If a provider ignores this and returns a url instead, the
+  // caller encodes it to base64 client-side, falling back to the url if CORS blocks that.
   const body = {
     model: model || "qwen/qwen-image-3",
     prompt,
     size: size || "512x512",
-    response_format: "url"
+    response_format: "b64_json"
   };
   const res = await fetch("https://openrouter.ai/api/v1/images", {
     method: "POST",
@@ -999,6 +1371,189 @@ function stripB64(json) {
   } catch (_) { return json; }
 }
 
+/* ---- generated-image cache (single image, base64) ------------------
+   Flow: the user often generates an image early, then later asks the coder
+   to build the HTML. We cache ONE image as a base64 data URI so the coder
+   step can embed it even turns later. Most-recent wins (a new image overwrites).
+   Lifetime: survives across turns within a session; wiped on refresh (loadState),
+   same as system prompts. Backed by localStorage so it is a real local cache. */
+const SWOT_IMG_TOKEN = "__SWOT_IMAGE_DATA_URI__";   // placeholder the coder inserts; swapped for the real data URI in code
+const IMG_CACHE_KEY = "gbswot2:lastImage";
+let lastImageDataUri = "";                          // in-memory mirror of the cached image
+
+/* ---- static NFCU logo (base64) -------------------------------------
+   A separate, static workflow from the dynamic image agent: this logo is
+   always injected into the header of the coder's SWOT HTML. */
+const NFCU_LOGO_TOKEN = "__NFCU_LOGO_DATA_URI__";
+const NFCU_LOGO_DATA_URI = "data:image/webp;base64,UklGRrobAABXRUJQVlA4TK0bAAAvSUEwEP/noI0kR/KsHs2jeP54ctrWa8NRCAdtJDmSe/QgHu5TzvmnXde27RpOWDJfqQoV+NK/al5mv/eO2rZtmPRkknMGG8zJLvx1pv/IkgJKoLQGQACVAoDiAKCFmBBCaggVjWraIEgBkwBB6wplQKYNWoa2zSnymH+59EDbQw8QCAFA5QEAIIU4ghQA2AIASYCyUswUMwsrC0IIMStAAFRq1mFskWNHFEdwQF8A4YgjaGAkRmI4TuAEjmMkRmBjw7HlPjYcHwwHRKvvIOInjTY0MqIilBpiRDKiVhv6NYEDT65pIYS48UV/H29E5vPZNwz/fZr+1++ls+V6TPjDtu2Z0mz79gGxd03vxd6iRgGFqNFIqi1NNMVeJ8mTasPuHbEnRlPsmmCwEewVBUXKzOzEKBrTLVETe8MO/DHndZznNXPJzVuXiP5PAP7bLnv3uIOXj+/M2rTyaLy78i0U1xZWn76BmtlLBpYpjmlzPoXqI8O+ZfVX0qje+3FoMUu5Mx6SvgN7ufsTYCHLodW3TLmwhSSP3x1SjBIW6yHJ3Pr3cnclqBAxn3Oieu0iycThxSbVTpJkal/XjR18FlZocZxulJlDkt5uJYpFCsb56J+SnLyV2cn+GVyXnJycnMKs5OTVPvovf9IBLifoL7mq1TlBOtTUoATtB6zaJ2h2M/VSgvi7xQmafxi6mCAfae7qNwzQbVWCz0uD72l1pfQeQ/lbqP2zVUsv5al5hpZQvCiWuhWMNPNQvCLU2LUErm10ggeuhYeHL+aAcOUSjgj3b72TjcLDw1/w8MPJzBriREkunf8EQHXqZ9WywHwNVjHT0ifrHb1N5wsj0ykfCdNPLeffpf/igisAmnLLLSgXshyUl3geAF5iao3Rvqz7HIjDAm+mAfa2ek9ngpkOFHtro7+Or7yBel7ZlzBdYgnnh7/L9bUAYCrHQKtl9q6bAPApE/N7M+thB5qlE2vftUwTS61qezVWmtkvmwfk/6DBQwZmUJz9tCnXQa64WjMjewQAhOVkXNPDafb3K0zgqxjNbXWdx1tTo5t9HWm0nAX2arCmiagcWR8A1XW8zbSe9sp+h+lXuLUmjvA1+H/EUzDQnkv9UC8zuxnO8e9Ix+HrGhftu2zmDav+Ou+ZiKHYUwsA9mlwmtYhine0MNXQk9UYD/BECcUX/NDEld2+634Yy1mIXMqLzrP9lux12+rR7MkCi9I+ja9M/CLLhX8Dr4bnSY3HvbLOMBz6Ewcj9Ad+DP+ojOySJvAz71Zc2cBKqJnubeQ47CubYNtrhjjMAos1ciL08lJk7yswVYPnND6jOLnQVH8uz8e9/MmlGMqjMPIiTyvQm7OBXvwpxHGWybrbFbLO1HSrARpsr1eZ4qxoVat0jaw6ovo+WQwMh23l6zExPzE+RnmaB2OsV/GdGMt+TI1R3pXp6xDzwnbe7ThsLHrDrgcpXS7aHWbR3KcxSa+rbDYsx2vwd9HnFC9wmerBIF1d4DinA2ma5PsXRXzRAt9qrHdpHZc9bxWxQSOntqCtT+RrB8ORmzk5Pn4P58cr/2BmvHAjP4u3/pdL4pWTvJwSH/8DYxxhc7Iku7Tkkk1RuyRjWvpE86y6aLCpTluKM65a4W4NxgpmUjwNpj/kPACrWQ7KmvwHwoUsB+tOjIV6IR8EXuBeR9jYRcKxktdsuofSpkgU+cpY1PFpDNYZIzsMYUiCRsZ1i6Y+0e4bxubwTqA+k6B+gIdNPcDZFp14AcjfzJpOsKlkhuTHSME4m+ZIjrnwpog9LPCdxiKdn2R3SlBZg29YnKJ4PExf96TmA104waI3x5kqwxMWdXkCQCwHOsFm/Cnhc4I37WnulVwAGsn2uCzcGp5rsuY+UfotEY5o7LymaOATnYwwdjc/A3CY7S0m8jlTBRnZeSpsYi0gjouc4Ec0ES0NlMGUxgEF20R8wqK1Bu+SvUfxQcjLZsn4luIIxR/C+Bk+B+Ckr5ZFLhuawt9sY3Gao4C8HVm3HGAL8J2EDa1etcWVJNmRD+CgbJIFftKYITsqu0MDFzR23ARQwSf6KcTccbYGanEtLP9hK2MH2NhiNAcB+JpxDrAVuFv0S2CMoHQ6ANwj21HC4mWNHXmSm1mitBI60dtkHARgNsWVYfymb7sLGMGjVhsYYewMR1l8zD8BvMEBzlBimySzlMVbtvwuutOvlE/ETyzqanC45COKf4F2L41tUWhC8UyYH8F5AO7ib1a7PC5jv/N5i7bcC+BZxjvANgCvSzjIYrwdhSmSzKt+WCqbbYFEjUuSg7KheoXJMrqxX5RZ14ZPOBVAZw6yCGUKjL3Gdy2eYjKAJ/iNA6QAeNIrOZmnetuOGEq/gvItWXYpi8EaywWFaaLt+Xq4T2NzFYovwsb+fB3Am+xoEc3j5gZytEU+twGoy2UOsB0AvpTwE9UYO46I+qlGyPiORVkN1rEaRvFkGHQtlDFVtDXcjsGc2KBBg0Ps0UBdjXsaSBP5cQPha/yzgWWGp0GDBg9zjQPs8BslWqB6xYZaWRJfaVXBNtm/Flim0c/qd1lVE2jik8nfhZ2vMqi3OECqX8FxCdva1p/SBFhOl7GtRQ+N2Rauk6ItoUbwl7GVeba8wqTc3Nz1XJar3su0XOl2Ls4V/sNjuZbZPJqbO4cbnAI9RX8oetjwvWiQ1fMar1uU1ci4onqU4t9htlW6qWdgay++AiCWH0LdiqsgXchyEPbnW7DM2g3gOpMcIE1RK0eyu6TfIHOPU1zeqpZXtilUheUyVlONlT1sCGMN5cLevvwUwNvsZBHFDeZeYReLCG4AUJ8JDrBTgV8k7Ow32NwE0RoIL8v4jMUYjd9Uy0UbC0xFbTLiqW/TMB4C0J9vWbi86eYusoNFc64A8CAPO8Au1ROi4wW2FGwQxUrGaBy0KKex1uVXk+L/wHhfI/GwuSb/BlCdv1hgB/ONTeEnFo05G0B/vuYA6Sp8L+H9AF42NpLiKpJHNTJuqrBSxvp+A2RPmCtYZiDtKbtCc7IjgXK8bHWMLYx9zpEWH7ArgMm82wF2W/QV5QLoaeyMKCVUEvKjjB0sxmv09JsnWusyh4cM9ITtC/goUMKTGmKRyDbG5rKhxevsCCCRzRwgw+JKioTlbAhLF02D+BeNhRb1NRYAKOkRTYCd+7XWXrHvTfYAkMinLWZypLF1rGWxl+2A674fXQ6QY4H/iD4FBpp6n+LfYsTxGr66KiTJPNHAhxQ3saVets6dsD+OSwCcZweLS+xkKsKXCnWJnIx84EXOgJPU8EnSwuA2NV9m73iLsTI+C8wUJbtswRSNRa4ACN3sLQ18xDMWLzLe1GP8zqIK5wKYxTucINMKRyV8D50N1fQFzhqXqq3GLyiRLhoHe8do3IlAnMjxQHR2aqSqEeeZeoHTLS5wAHDDk1rCCbIEQ0RJri6GxjCAh6twQra1YBTFbQOqekA04IY8YC6Hqkpxk6m3+bbKtZ5tgLd4Hk6QLQhdJ2FVQ649gXTOYpyMT0wWrYLjYA6D1NvMETwCDBIdGWCmEQM59YqqgcZrm0VvO9BIMjUlxcOdKcocpqdYZzM1xXI7maL2Mi0lJZuH4QheyfUsiXeimV8Dih+pkCxLo7ieA2EOBwMTeQnKdzgJ1gtZDpYVuBLKsp6UKNTZldXMGXwSHJQw1UiJHYH1lcUlmXwZnKitJ6Msynh2tVCU5cYQI2/xddUvfBU4wK5wnuEiudULDGxPbVU7c6MdCd24MA9TGavAHjY0soyVFfU9qS3wIteFOwRFWGbXgQBjZxWSjdV1psJl7IbauzxNFV05zkQd7iz0C9lLN8qn+4bBKVyiPjZd94hyPokxeLfOcosJphLgTGibznvRg5dD/SpzlYkBPAT/l7gnstZqXoIjRaTa04XiWTD6kwYbqB411cWpMMSbNTQ0gZf8XKtYycAKVvErl+4dfnUpvyxwjgIRJtqzTPa+mdE6XVWuY2Z8zR0LbmZUrZ/hGwUAvXlQrzL/cQG4uooTbi5hYhgcqp7Pjsco9pYy00Zna74CF80sgnOhM7Nf+oi7HwEQleqpoTWH/QBEzuOCNiv4/TU4SKgM++yIlc2H4RUavF81wkx/J4Pbx0l7uK2n2+1ezrlu5XFedPu/Rr7qdru/oq/bRi6OhnN9YkPoJlknU2/pnFa5jpnw1nY0PJPKwJxRAo6Sr5G3wdxQylubaqqTWVKBWBPz4Gwov1zxQ0/3VHpedbvd7uO86Ha73X8zye3+S5HR3wVnKdTAeHOfyb6H8WQN9lE9YqKP0yFygpck57cp2MuZLgALWQ7AUG9WhfwxWX4J9eCEskidVtmmwnNkr5jrrrNEFXJSz1PL8YC2R0lyd7dGGzkl1GJYOt/5cCVJbvygAI5TQgefm3qJ8vrmKuqwhgJd9XJxGwCGHSXJ7JXkN0/65Q/O5Lb1JLl+YBQccmuKVK9KisFnAexPESfCfMjKFM2XVY1StD8MCHeK/JlgAMpf2EhlzqljnLGeyszZL+ShOLag8fi56RT6/vn13nAU4xa0jnu/Z/euY94bUj4C/3fF+2Lsbw/g8ZiALOf3ottox773xjzTsFWesRoxAdkUwA236T59+8bEPPNYKdtc77h1XzJTxi1/KIA8tH87gDcZkK/6LaedWasO96xUwkRPBuQFAI1p95YD/Ura0ojavrpGHqB8YhFFufPgHaHORXLn+DwbftXjW0U7ksc7FToYuaSksRI7DKwJKeqRqx52Mn4fYepOmmxc9KNvoJPxoKn9Rib/F0BOznMwPmTmqWwjOyP+G+AZl4NddhkZQLMf/VfAMQ7GR438a+ir/w58dzjYOBNNadhT26HSko1+byDBdB8TZ+Pj4+N/OXR44WqfCW68aub7BMOdDUyJ8x8V8/ygL3ZrLTTRTZIhotuh/oBxnRDYqVMe1tFDu27V4wUz4bBRZxCEURO8GtsN5G2WvL1RtKLoBeCKe5eWp6ZjAL01eFOvGqVNp4hYoSgGtFmhw64OgssazfUOSY65PpZ1LZqhZKLOzpsO0kGjmVZ4juQCbmaLtuQXzdB8iwY/dJBHNOpovURpHDBfxPZFNNyjc9hB6miEay2SbM8DesoOF9VC/tXYFekczWRbodvGJ5kOoK0ss2QRDR00WNE52stytd6i9BMArpMi9iuqhWVp9HOOc7JOOiHHJZlhAPCH7NuiGuZrTHaM6ztF6dd0Hqb0S/jfIWOz29eDcWavBMyrGvMMtI8zG2ZXxDyKx0B3iqiP4mqW7M3bl+myAXOXRrIB003sifhkJcX78nVupUl8rRSYK1sb4jxpySbvcZ6GGhmuIDqZoE5a76F8ZhR076X0O6g7yxjnPGb7O8+TGowMItM7Brig/bVosMXjGmeLaKV0wh1me+w16LfyiupbYK1sV0TRLErnuoN4/vnj40iYHEjpaljHy/hc0ayUTgsHOTjmpcpmVoi6CdprfFM0q6FzxUH8049U0WtHcWNBVKbMe6NI1lDD53IYkvGhOhdE20IFOCrj6CLZSI10OA8naeRvEZ2FdIDGqttUguHmAdNRY42B7xPMPh1IrChrT/EdonoabHh7CoGdgfCrxlED4bBRZ0+ucu9qvS9lM0UZESKs0fjNYQ7EmbzhPEkak4JpECxLjc3S8FyTXMsU2but0Fn+gHFHeZKabkcAXtTgXZKODNw7il5jdeIcwvWvxu+SywF0qsh1dZtGTgmHwBiNRYJmDODsp4paE6g5F07xkEaay2pcILF3ESvOq9PTMdpo8LpFyLqAWlq0areDmtktHSPSp9HI4kEGdrmi1HPp1D0Nx8BGjXsspgXYG0Wn4XOoX8VBvtV4VRW1K8BOFhSF8lq/0HUVDc6CgxzWmKH6kOL1uSaPa3CYiT/CzUY5RorxmwbWJfsfT6PhXc3NbE8x3dymCxoJqjmyDjD5ic50E6aPOob5cAN2vwMz5lvbNFBju6K5V+S9biQqQ2N3WFHt8xBHuUuD1/wGU7wQZk9p8O4i2jcl4ChVdBr6Jcm6GHpOZ17R7NQVOEtZnfcBVKT8SUPRWRq+1kWw7DEhcJhIr0ZXAL/L/obprzXYo+iV2BBiZ8BxjXlAYYpsvLEOOntcRawf7gmBA32tkRaK+yhvaqyUV4OPFKXSD94fAl2HuKTBR3FEtsZlDPN1JhWRUi+f7Tm8EAYd4j6dgbWyZN1gvr/O9sjguS9GXMHc4zGBmQ+gaozZoXGVG5SJhvEaMYF5C2gRI6+ncTNG89HaMfIbNpSM0S15PSYQhxv5f2XWGfx14oL4yopxrxXPvqgIeStzb5c735+aPqclAC+LZ7/yc53ZcT/8S89f16qYp1dOw4KOb3fvXQaR3y5yFevc3DEWkZw6aE52JTTzDCnWuct7HZF8ACGrJgIHPi/WmfgPFDc3dAbc64t1Du7zWzBry8RC4LmcYp34RL8371m05xbQe1OxTsesMETyAbTyxQDTc4t1WmV1VGB1d7TY+VKxDi5suVGY8iDQ9Wv8tbqweOfK0qQ28M/rursdindwc3bGp3F12/Zbub4hinuAZz7/kelLBtwCgPtiimcrWQAowP/naEh481ohxUCtPpjxTxZJbvmuW/top4oK97+qCA1XFgZGaLjaSGS4MipAosL9rzrcg7O8FOf82dSZ9tF/j6IJlR0CozHVISZepnJJgMyj/w+OVu9rGjzSslimz24aTXn29tLB7f9sEa9gIo2Pva3sof++op1rKm3sUcwyjta7DvUfVrHxHWP2+qx89xerjPJZpA2MgGX9WRbcUtLB6sQrK91eesX7v+VQLbZSffkGpK53vCp2dTDt24Sz/0r1vlvQHGCxu0WxST2v6sRVaP+s4oBik6lU+kZAv3mmaklxybVM1WGY/EXlidIqrBb7xRfTmgpu3jH2zJHTk/q3c5kp/VK36V9cGDQ07DbUuuO5U4f/GP1Ivm0h9f8n9tDsw9PGVL9mQ/hdXT//+c/Xhl61oSOVnqeNPKxiJQBNkv1X+D1/jP7PWrT7LJuWx3pF6D20xEd1xrRmWuWTlS8Ac5KTk5OzFBnJ/meDZ1ay/wcA2h7wUb25Z4TgTLL/N6IWb6+ltTe3uksyKNn/VwBP/Z5DdcbvzY3tUx2F0bztqrsBDKf/biDyDNWqq1N9FK+rptFiNsXZY0M1mlDZAThB7dzgSaR/F2BgFqUrylrNo/8PgoJeO6m59DFBLP2PACN/pHT7UENhWao+ZuRWeV9T1iaZur7xLkmdJOoezrt9/IeaPzY3FX2U+ll99T7OotxbzcwDVHqvB85FyupupsGLgtrrqR972+hN7e8KzIQn0mgXnSYZ1N1+w8ho1R4ETHmvLOIELT0n06zYz6JgL4U7N/gUvpTbxLkMxZaTOVb8xEjoHAo37BLwE9nRlfTfdWynFX83MkN1OHD+pOxTKr1/Di8AWnbarMp8WtWRloteKAnkNTrnpbXenX379u37oyKpr/8zwea/8vkwoPChxRbfGulBddafIyKBWu8nWqTdEPmnuEsDrrZnLTLCTSxWjQkYTxpJ7/SRpVxX65fCcK9ic0WoS36j4ALFlU0qTy8X1CNOmlPuUeyD4SCYlA9l3imVN9pA8wzV2opQF4zzKXhQ5/JTULtVbG9ineqDgPFf9wgs99F/R1lYl1is4Ei/F6nuA2G5bbeRgy5YtkhTcJSB7lRuKwPhIJWntezEVVi6FqsumkhV3RlIG9vAsj6VL0BaN0Pxpd981WGI7759bImGcLKqn96tFFU1SF37FXxdNhzC51WnTWSpHgikUbA+r/jXJcLvCm8rINqj8NaThfx72xgL6b2qHnrPU3kU8nJeRUqBZBGkpVVzTWSrhgXQfgjXKnpD3lTBDsAoKg9As/dto63oMVV3vXOqqhqYpWBTSScRUhVLTaSpYgJoqKA5lTU0XJsU04FXVH10Wt4udhaIShtbpdiap/O86l1JQ1myuQ2qFwNnR6jgXoU3TwNzFSuBv1RldXDyNrEH4mhT0T7FaeiWUv0lKS1bZu471cuBcxTCMYqceN09igwX5ilyQrX23yaWBkQ5KgdpYZNin+RqgBxWnQmc7pILCuPhSFQkQXtK0OWZGGQiISAqqT7SW6T4WxIWIONVy039zyHlEIlbMt2eUkhSfKcXG3SRJsYES3tVNb39ig2BV12VfdPQHCo7SPpKZtpTCysU8/S6B00ji5ImJqgWBdzHqqp6pxRbAq+FV8G7DG1QjZQ8J5lsTz4WKRL04oOmnUUbE1NURwMuTvWx3j5FUuAhQTXTTDOqSxt6XZEK4/sVq/W+CJqyFg+b+Fr1ecA9pnpXL0mxKAheVmW0MjJAtRGGRit8BcbOKjxXtJKD5opP1dvEJlVswDVX/ap1xaP4OQhueBWMN+FaofrL1CgFmxkboOAInVq+oME61RkDranuF3CurYq/tRpT+XYQ4Igqq66BUVTfZ6qFT3GPscaqSzp9GTyHVelheoMs2gUcflawrM6nqqrBMELFxXlaEXtUKZGmcELxlc7MBP97gasexbE8jSUBMM9YRxXf04pco0rJCzy3aoJG1FaFJywYcErFsyEarj+pfhXGuiu85WXDqSwP4ICC/WQPMAAuG2vlVaW01nmD6qkIvCe9it21ZT2onI2gqLlbxc9uiULiqU65Zq6M14+L8yV53ymOuwDcqdpWU9LimD1JiiRj+FnFH2qKXD19FiOCAEcUPBoqaZKhqhoc6GPB5PtdVvUX0vJdmMNsBQ/lWRVMofJdACixRcF/Sltd20t7EhSeVsZG+FTcObqkhavSN7Tch2B4UMU/C63Kn6RypStIcMaCXDW+auvwlu0++NpDy9wQOxp4FExspKr/DZUnI/3wgYpb78r3K6h+jDYdUPDbRtHh1582gb8syOwFE9193nl7xnpaZzcNCnyl4uVKirBOu6muhmApnGtlcE8t2IHuKjJ56ti3zydS7R0GZcgSFfnjoTfGzVhL/yw7LqqUuUbCj1uZHIjgaL5NRa48Oz725520/BNBg1v7jR1/EvbkfWOh+Sosa2y3kGa+bsdI21Bvi7nJriBBXI6F5qIrQYS8bj4zl2vDJkTtMzHOZYVKqXqdXrIjL8k2PL3GVGwBggXP7DQx7yqCCRh2wkDWuHzYhvyuPp0d70Pc9gedV2ELHt1hG6L/MrL5PkgDDo8nanlez0eQIf/dHzSyp9WA2BgwYo4o41xLaN4anyo5fj9sQrOZXruAEfu9Opt6hCGokNfnmMh75DEIgwZwNZ6QmKlKnfVuKWiGxymvGwCa9Zi7haRv7aF+JWEw4sODyV6Sx2Z8nAegVZz/E4qwOGVtAXDtgU6vvDa43/31zAHN+8/eZJH972/V8qDZMM6/iSwvTllXUSHOf4QECHkwNiGNpG/trAE3IC4bpwyVNYzzf9Qu/7waFR+Me/Q6Aj/iqWsu2JgfXeoKnDWsdbu4Sk9fz4eDhl2PLkRwAwA=";
+
+function cacheImage(dataUri) {
+  lastImageDataUri = dataUri || "";
+  try {
+    if (lastImageDataUri) lsSet(IMG_CACHE_KEY, lastImageDataUri);
+    else lsRemove(IMG_CACHE_KEY);
+  } catch (_) { /* quota exceeded: keep the in-memory copy only */ }
+  updateImgCacheStatus();
+}
+function getCachedImage() {
+  if (lastImageDataUri) return lastImageDataUri;
+  try { return lsGet(IMG_CACHE_KEY) || ""; } catch (_) { return ""; }
+}
+function clearImageCache() {
+  lastImageDataUri = "";
+  try { lsRemove(IMG_CACHE_KEY); } catch (_) {}
+  updateImgCacheStatus();
+}
+function updateImgCacheStatus() {
+  const has = !!getCachedImage();
+  const dot = $("imgCacheDot");
+  if (dot) {
+    dot.classList.toggle("on", has);
+    dot.classList.toggle("off", !has);
+    dot.setAttribute("data-tip", has ? "image cached (will be embedded by the coder)" : "no image cached");
+  }
+  const btn = $("clearImgBtn"); if (btn) btn.disabled = !has;
+}
+
+/* Turn a returned image into a base64 data URI. If it is already a data: URI
+   (the b64_json path), use it as-is. If it is a plain URL, encode it client-side
+   with fetch + FileReader. If that fails (usually CORS), return the URL so the
+   coder can still reference it, accepting that the page is not fully self-contained. */
+async function toDataUri(src) {
+  if (!src) return "";
+  if (src.startsWith("data:")) return src;
+  try {
+    const resp = await fetch(src);
+    const blob = await resp.blob();
+    return await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result));
+      fr.onerror = () => rej(fr.error);
+      fr.readAsDataURL(blob);
+    });
+  } catch (_) { return src; }   // CORS or network: fall back to the raw URL
+}
+
+/* Put an asset (logo or generated image) into the coder's HTML. Three cases,
+   all graceful:
+   1. coder used the placeholder as a src  -> swap the token for the data URI
+   2. coder omitted it (but we have one)   -> inject fallbackTag after <body>
+   3. nothing to embed                      -> strip any stray placeholder so
+      there is never a broken image icon or leftover token.
+   fallbackTag may be "" to disable injection (then case 2 is skipped). */
+function swapAsset(html, token, dataUri, fallbackTag) {
+  if (!dataUri) {
+    return String(html).replace(new RegExp(`<img[^>]*${token}[^>]*>`, "gi"), "");
+  }
+  if (String(html).includes(token)) {
+    return String(html).split(token).join(dataUri);
+  }
+  if (!fallbackTag) return html;
+  if (/<body[^>]*>/i.test(html)) {
+    return String(html).replace(/(<body[^>]*>)/i, `$1\n${fallbackTag}`);
+  }
+  return /<[a-z!]/i.test(html) ? fallbackTag + "\n" + html : html;   // fragment: prepend only if it looks like markup
+}
+
+/* Pull the HTML out of a model reply's first fenced block (drops any prose the
+   model wrapped around it). Falls back to the whole string. */
+function extractCode(content) {
+  const m = /```(?:html)?\n?([\s\S]*?)```/i.exec(String(content));
+  return m ? m[1].replace(/\n$/, "") : String(content);
+}
+function isHtmlLike(s) {
+  return /<(?:!doctype|html|body|section|main|header|div|h[1-6]|ul|ol|table|style)\b/i.test(String(s));
+}
+function fenceHtml(h) { return "```html\n" + h + "\n```"; }
+
+/* Fallback tags for the deterministic asset embed (used when the model omitted
+   the placeholder token). */
+const LOGO_FALLBACK = `<div style="margin:0 0 16px;"><span style="display:inline-block;background:#ffffff;padding:8px 14px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.12);"><img src="${NFCU_LOGO_DATA_URI}" alt="Navy Federal Credit Union" style="height:44px;width:auto;display:block;" /></span></div>`;
+const imgFallback = (uri) => `<img src="${uri}" alt="Generated illustration" style="max-width:100%;height:auto;display:block;margin:16px auto;" />`;
+
+/* Swap BOTH placeholder tokens for their real base64 data URIs. This is the
+   LAST thing done, after every LLM step, so the heavy base64 never passes
+   through the coder / visual identity / QA models (which would corrupt it). */
+function embedAssets(html, cachedImg, includeLogo) {
+  let out = html;
+  if (includeLogo) out = swapAsset(out, NFCU_LOGO_TOKEN, NFCU_LOGO_DATA_URI, LOGO_FALLBACK);
+  out = swapAsset(out, SWOT_IMG_TOKEN, cachedImg, cachedImg ? imgFallback(cachedImg) : "");
+  return out;
+}
+
+/* ---- audit manifest ------------------------------------------------
+   A deterministic provenance record injected into the finished HTML: a run UUID
+   and timestamp visible in the footer, plus a collapsible "Run manifest" holding
+   the ordered agents (model, temperature, and a short hash of each system prompt)
+   and a machine-readable JSON copy. Built in code from the locked config, NOT by
+   the model, so it is authoritative. System prompts are hashed, not printed, so
+   the audit is verifiable without bloating the page or leaking the prompts. */
+function promptHash(s) {                 // FNV-1a 32-bit -> 8 hex chars; stable, not cryptographic
+  let h = 0x811c9dc5;
+  const str = String(s || "");
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+function buildManifest(cfg, meta) {
+  // ordered pipeline; each entry pulls its own config off cfg
+  const rows = [
+    ["orchestrator",           cfg.orch],
+    ["researcher",             cfg.resp],
+    ["data connector",         cfg.data],
+    ["image",                  cfg.image],
+    ["critic",                 cfg.critic],
+    ["brand voice",            cfg.voice],
+    ["brand visual identity",  cfg.visual],
+    ["coder",                  cfg.coder],
+    ["code QA",                cfg.qa]
+  ].filter(([, c]) => c).map(([name, c]) => ({
+    agent: name,
+    model: c.model || "",
+    temperature: (typeof c.temp === "number") ? c.temp : null,
+    system_prompt_sha: promptHash(c.system != null ? c.system : c.style)
+  }));
+  const json = {
+    run_id: meta.id,
+    generated_at: meta.at,
+    task: meta.task,
+    selected_agents: meta.selected,
+    data_sources: DATA_SOURCES,
+    agents: rows
+  };
+  const esc2 = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const trows = rows.map(a =>
+    `<tr><td style="padding:2px 10px 2px 0;">${esc2(a.agent)}</td><td style="padding:2px 10px 2px 0;font-family:monospace;">${esc2(a.model)}</td><td style="padding:2px 10px 2px 0;">${a.temperature == null ? "-" : a.temperature}</td><td style="padding:2px 0;font-family:monospace;color:#889;">${a.system_prompt_sha}</td></tr>`
+  ).join("");
+  const jsonStr = JSON.stringify(json, null, 2).replace(/</g, "\\u003c");   // keep valid JSON; escaping < prevents a premature closing script tag
+  // NB: closing script tag is split so it cannot terminate THIS file's script block
+  return `
+<footer style="margin-top:40px;padding-top:14px;border-top:1px solid rgba(0,0,0,.12);font:11px/1.5 system-ui,-apple-system,sans-serif;color:#6b7280;">
+  <div>Run <code>${esc2(meta.id)}</code> &middot; ${esc2(meta.at)}</div>
+  <details style="margin-top:8px;">
+    <summary style="cursor:pointer;">Run manifest (provenance &amp; audit trace)</summary>
+    <div style="margin-top:10px;">
+      <div style="margin-bottom:8px;">Task: ${esc2(meta.task)}</div>
+      <div style="margin-bottom:8px;">Selected by orchestrator: ${esc2((meta.selected || []).join(", ") || "(none)")}</div>
+      <table style="border-collapse:collapse;margin-bottom:10px;"><thead><tr style="text-align:left;color:#889;"><th style="padding:2px 10px 2px 0;">agent</th><th style="padding:2px 10px 2px 0;">model</th><th style="padding:2px 10px 2px 0;">temp</th><th style="padding:2px 0;">prompt hash</th></tr></thead><tbody>${trows}</tbody></table>
+      <div style="margin-bottom:8px;">Data sources: ${DATA_SOURCES.map(esc2).join(", ")}</div>
+      <script type="application/json" data-run-manifest="1">${jsonStr}<` + `/script>
+    </div>
+  </details>
+</footer>`;
+}
+function injectManifest(html, snippet) {
+  if (!snippet) return html;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, snippet + "\n</body>");
+  return html + "\n" + snippet;
+}
+
+/* Replace embedded base64 image blobs with a short marker. Used ONLY when
+   remembering a deliverable for the next turn, so a ~100KB+ data URI never gets
+   fed back into later prompts. The displayed / downloaded page keeps the real image. */
+function stripDataUris(s) {
+  return String(s).replace(/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi, "[embedded image]");
+}
+
 /* Pull source citations out of a completion. OpenRouter standardizes them as
    choices[0].message.annotations[] with type "url_citation"; Perplexity also
    sometimes returns a top-level "citations" array. Handle both, de-duped. */
@@ -1046,7 +1601,12 @@ function renderContent(container, text) {
       : "";
     // HTML defaults to the rendered preview; the raw <pre> starts hidden.
     const preview = isHtml ? `<iframe class="codepreview" sandbox="allow-scripts"></iframe>` : "";
-    const box = el(`<div class="codebox"><div class="codebar"><span class="codelang">${esc(m[1] || "code")}</span>${toggle}<button type="button" class="codecopy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>copy</span></button></div><pre${isHtml ? " hidden" : ""}></pre>${preview}</div>`);
+    // HTML pages get a one-click "download + open": saves the page as a single
+    // self-contained .html file AND opens it in a new tab. One button, no steps.
+    const dl = isHtml
+      ? `<button type="button" class="codedl" title="Save this page as a file and open it in a new tab"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>download + open</span></button>`
+      : "";
+    const box = el(`<div class="codebox"><div class="codebar"><span class="codelang">${esc(m[1] || "code")}</span><div class="codebtns">${toggle}${dl}<button type="button" class="codecopy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>copy</span></button></div></div><pre${isHtml ? " hidden" : ""}></pre>${preview}</div>`);
     box.querySelector("pre").textContent = code;
     box.querySelector(".codecopy").addEventListener("click", (e) => {
       const btn = e.currentTarget, lbl = btn.querySelector("span");
@@ -1060,7 +1620,25 @@ function renderContent(container, text) {
       const frame = box.querySelector(".codepreview");
       const bCode = box.querySelector(".ct-code");
       const bPrev = box.querySelector(".ct-prev");
+      const bDl = box.querySelector(".codedl");
       frame.srcdoc = code;                                     // preview is the default view — render immediately
+      // Download + open: one click saves the page as a single self-contained
+      // .html file and opens that same page in a new browser tab. The coder
+      // already inlines all CSS, so the downloaded file needs no other files.
+      if (bDl) bDl.addEventListener("click", () => {
+        const lbl = bDl.querySelector("span");
+        try {
+          const blob = new Blob([code], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");         // trigger the file download
+          a.href = url; a.download = "swot.html";
+          document.body.appendChild(a); a.click(); a.remove();
+          window.open(url, "_blank", "noopener");         // and open it rendered in a new tab
+          setTimeout(() => URL.revokeObjectURL(url), 60000); // free the blob once the tab has loaded
+          lbl.textContent = "downloaded ✓";
+          setTimeout(() => { lbl.textContent = "download + open"; }, 1600);
+        } catch (_) { lbl.textContent = "download failed"; }
+      });
       bPrev.addEventListener("click", () => {
         pre.hidden = true; frame.hidden = false;
         bPrev.classList.add("active"); bCode.classList.remove("active");
@@ -1163,6 +1741,8 @@ async function run() {
   const task = $("taskInput").value.trim() || $("taskInput").placeholder;
   if (!$("apiKey").value.trim()) { alert("Set your OpenRouter API key first."); return; }
   if (!savedConfig) { alert("Save your agentic setup first."); return; }
+  $("taskInput").value = "";                          // clear the composer once the run actually starts
+  const wantsSwot = /\bswot\b/i.test(task);           // only frame the output as a SWOT when the task asks for one
   const cfg = savedConfig;               // the run uses the LOCKED setup, not live inputs
   const memory = lastDeliverable         // carry the previous turn's result so follow-ups resolve
     ? `Earlier in this conversation, the agent system produced this result:\n\n${lastDeliverable}\n\n----------\n\n`
@@ -1176,6 +1756,7 @@ async function run() {
 
   // full transcript of every agent call — exported at the end
   const runLog = {
+    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "run-" + Date.now().toString(36),
     task,
     default_model: $("defaultModel").value.trim(),
     started_at: new Date().toISOString(),
@@ -1202,6 +1783,8 @@ async function run() {
     // explicitly asks for code / a page / a rendering. Otherwise it is
     // removed from the enum, so the planner cannot choose it at all.
     const agentEnum = [...cfg.connected].filter(k => k !== "coder" || coderAllowed);
+    if (cfg.visual && cfg.visual.enabled) agentEnum.push("brand_visual");   // let the orchestrator genuinely pick these
+    if (cfg.qa && cfg.qa.enabled) agentEnum.push("code_qa");
     const r = await callModel({
       model: cfg.orch.model,
       system: cfg.orch.system,
@@ -1225,6 +1808,14 @@ async function run() {
       }
     });
     try { plan = JSON.parse(r.content.match(/\{[\s\S]*\}/)[0]); } catch (_) {}
+    // Backstop for visible agency: the coder's utility agents always run with it
+    // (when enabled), so guarantee they appear in the plan even if the model
+    // forgot to list them. This keeps the displayed plan honest about what runs.
+    if ((plan.agents || []).includes("coder")) {
+      plan.agents = plan.agents.slice();
+      if (cfg.visual && cfg.visual.enabled && !plan.agents.includes("brand_visual")) plan.agents.push("brand_visual");
+      if (cfg.qa && cfg.qa.enabled && !plan.agents.includes("code_qa")) plan.agents.push("code_qa");
+    }
     logStep("orchestrator.plan", r, { parsed_plan: plan });
     const steps = (plan.plan || []).map(s =>
       `<li><span class="mk">▸</span> ${esc(s)}</li>`).join("");
@@ -1268,14 +1859,14 @@ async function run() {
       finishBlock(ansBlock, r.content, r);
     } catch (e) { failBlock(ansBlock, e.message); return; }
 
-    // brand voice rewrite — only when a voice prompt is actually set, so a
+    // brand voice rewrite: only when a voice prompt is actually set, so a
     // plain answer is not distorted by an empty-voice rewrite.
     if (cfg.voice && (cfg.voice.system || "").trim()) {
       const vBlock = addBlock("voice", "brand voice · final answer", "");
       try {
         const r = await callModel({
           model: cfg.voice.model,
-          system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact. Output prose only. Do NOT produce HTML, code, or a web page.)",
+          system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact. Do NOT add a SWOT structure or Strengths/Weaknesses/Opportunities/Threats sections. Output prose only. Do NOT produce HTML, code, or a web page.)",
           user: answer,
           temperature: cfg.voice.temp
         });
@@ -1364,7 +1955,20 @@ async function run() {
     tasks.push((async () => {
       try {
         const style = (cfg.image.style || "").trim();
-        const prompt = (style ? style + "\n\n" : "") + task;
+        // Brand voice into the image: a built-in preset contributes its thematic
+        // motif var; a custom voice contributes its text only if the user opted in.
+        const vp = cfg.voice && cfg.voice.preset;
+        let brandImg = "";
+        if (vp && VOICE_PRESETS[vp] && VOICE_PRESETS[vp].image) brandImg = VOICE_PRESETS[vp].image;
+        else if (!vp && cfg.voice && cfg.voice.includeCustomInImage && (cfg.voice.system || "").trim()) brandImg = cfg.voice.system.trim();
+        // Blend: the user's style is the overall aesthetic and medium; the brand
+        // contributes thematic elements to weave in. So "synthwave" stays the look
+        // while a pirate voice adds ship/rope/compass motifs -> a synthwave pirate ship.
+        let prompt;
+        if (style && brandImg) prompt = `Overall visual style and medium: ${style}.\n\nThematic and brand elements to incorporate within that style: ${brandImg}\n\nSubject: ${task}`;
+        else if (style) prompt = `${style}\n\n${task}`;
+        else if (brandImg) prompt = `${brandImg}\n\n${task}`;
+        else prompt = task;
         const r = await callImage({ model: cfg.image.model, prompt, size: cfg.image.size });
         const cleanReceived = stripB64(r.received);
         logStep("image", { sent: r.sent, received: cleanReceived }, { images: r.images.length });
@@ -1372,6 +1976,9 @@ async function run() {
         const cEl = b.querySelector(".content"); cEl.classList.remove("dim");
         cEl.textContent = r.images.length ? `generated ${r.images.length} image(s)` : (r.content || "(no image returned)");
         r.images.forEach(src => b.appendChild(el(`<img class="genimg" src="${src}" alt="generated image" />`)));
+        // Cache ONLY the first image, as a base64 data URI, for the coder to embed
+        // later. Most-recent wins. Encoding happens client-side in toDataUri().
+        if (r.images.length) { cacheImage(await toDataUri(r.images[0])); }
         b.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>
           <pre>REQUEST\n${esc(JSON.stringify(r.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(cleanReceived, null, 2))}</pre></details>`));
         $("chat").scrollTop = $("chat").scrollHeight;
@@ -1392,7 +1999,9 @@ async function run() {
   try {
     const r = await callModel({
       model: cfg.orch.model,
-      system: "You are the ORCHESTRATOR. Combine the agent findings into one clear deliverable for the user's task. If the task is a SWOT analysis, use four labeled sections (Strengths, Weaknesses, Opportunities, Threats); otherwise synthesize the findings into a coherent response. Use only the findings provided. Preserve any [n] citation markers from the findings. Output plain markdown prose only — never HTML, code, or a full web page, even if the task asks for a webpage; a later coder step handles rendering.",
+      system: wantsSwot
+        ? "You are the ORCHESTRATOR. Combine the agent findings into a SWOT analysis with four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Use only the findings provided. Preserve any [n] citation markers from the findings. Output plain markdown prose only, never HTML, code, or a full web page, even if the task asks for a webpage; a later coder step handles rendering."
+        : "You are the ORCHESTRATOR. Combine the agent findings into one clear, well-structured research summary for the user's task. Do NOT use SWOT framing or Strengths/Weaknesses/Opportunities/Threats sections; the user did not ask for a SWOT. Use only the findings provided. Preserve any [n] citation markers from the findings. Output plain markdown prose only, never HTML, code, or a full web page, even if the task asks for a webpage; a later coder step handles rendering.",
       user: memory + `Task: ${task}\n\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}`,
       temperature: cfg.orch.temp
     });
@@ -1417,7 +2026,7 @@ async function run() {
         cr = await callModel({
           model: cfg.critic.model,
           system: cfg.critic.system,
-          user: `Task: ${task}\n\nDRAFT REPORT TO REVIEW:\n${report}\n\nSOURCE FINDINGS IT SHOULD BE GROUNDED IN:\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}\n\nReturn ONLY JSON: {"verdict":"accept"|"revise","score":<1-10 integer>,"assessment":"<your written review>","fixes":["concrete edit", …]}`,
+          user: (wantsSwot ? "" : "IMPORTANT: This deliverable is a general research report, NOT a SWOT analysis. The user did not ask for a SWOT. Evaluate it for grounding, coverage, and accuracy against the findings. Do NOT require, penalize, or even mention missing Strengths/Weaknesses/Opportunities/Threats sections.\n\n") + `Task: ${task}\n\nDRAFT REPORT TO REVIEW:\n${report}\n\nSOURCE FINDINGS IT SHOULD BE GROUNDED IN:\nINTERNAL (data connector):\n${dataFindings || "(none)"}\n\nEXTERNAL (researcher):\n${webFindings || "(none)"}\n\nReturn ONLY JSON: {"verdict":"accept"|"revise","score":<1-10 integer>,"assessment":"<your written review>","fixes":["concrete edit", …]}`,
           temperature: cfg.critic.temp,
           responseFormat: {
             type: "json_schema",
@@ -1454,7 +2063,9 @@ async function run() {
       try {
         const rr = await callModel({
           model: cfg.orch.model,
-          system: "You are the ORCHESTRATOR revising a draft SWOT using critic feedback. Apply the fixes, stay grounded in the findings, and keep the four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Preserve any [n] citation markers. Return ONLY the revised report as plain markdown prose — no preamble, and never HTML, code, or a web page even if the task asks for one; a later coder step handles rendering.",
+          system: wantsSwot
+            ? "You are the ORCHESTRATOR revising a draft SWOT using critic feedback. Apply the fixes, stay grounded in the findings, and keep the four labeled sections (Strengths, Weaknesses, Opportunities, Threats). Preserve any [n] citation markers. Return ONLY the revised report as plain markdown prose, no preamble, and never HTML, code, or a web page even if the task asks for one; a later coder step handles rendering."
+            : "You are the ORCHESTRATOR revising a draft research report using critic feedback. Apply the useful fixes and stay grounded in the findings, but keep it a clear research report: do NOT impose a SWOT structure, and ignore any feedback asking for Strengths/Weaknesses/Opportunities/Threats sections, since the user did not ask for a SWOT. Preserve any [n] citation markers. Return ONLY the revised report as plain markdown prose, no preamble, and never HTML, code, or a web page even if the task asks for one; a later coder step handles rendering.",
           user: `Task: ${task}\n\nCURRENT DRAFT:\n${report}\n\nCRITIC FEEDBACK (score ${review.score ?? "—"}/10):\n${review.assessment || ""}\n\nFIXES TO APPLY:\n${(review.fixes || []).map(f => "- " + f).join("\n") || "(none listed)"}\n\nSOURCE FINDINGS:\nINTERNAL:\n${dataFindings || "(none)"}\n\nEXTERNAL:\n${webFindings || "(none)"}`,
           temperature: cfg.orch.temp
         });
@@ -1471,7 +2082,7 @@ async function run() {
   try {
     const r = await callModel({
       model: cfg.voice.model,
-      system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact and any [n] citation markers. Output prose only — do NOT produce HTML, code, or a web page.)",
+      system: cfg.voice.system + "\n\n(Rewrite the tone only. Keep every fact, any [n] citation markers, and the report's existing structure." + (wantsSwot ? "" : " Do NOT add or impose a SWOT structure or Strengths/Weaknesses/Opportunities/Threats sections; the report is not a SWOT.") + " Output prose only. Do NOT produce HTML, code, or a web page.)",
       user: report,
       temperature: cfg.voice.temp
     });
@@ -1493,25 +2104,43 @@ async function run() {
     // what was already gathered and vetted (no need to re-run data/research).
     const finishedReport = finalDeliverable || lastDeliverable || "";
     const citations = allCitations.length ? allCitations : lastCitations;
-    const b = addBlock("coder", finishedReport ? "coder · final HTML" : "coder · code", cfg.coder.model);
+    const cachedImg = getCachedImage();   // embed this if present; stay graceful if not
+    const imgInstruction = cachedImg
+      ? `\n\nAN IMAGE IS AVAILABLE for this page. Include it exactly once using this EXACT placeholder as the src, and do not change the placeholder text or paste any base64 yourself:\n<img src="${SWOT_IMG_TOKEN}" alt="Generated illustration" style="max-width:100%;height:auto;" />\nPlace it near the top of the page.`
+      : "";
+    const b = addBlock("coder", finishedReport ? "coder · HTML draft" : "coder · code", cfg.coder.model);
+    // Static NFCU logo: always placed in the header of the SWOT HTML deliverable.
+    const logoInstruction = finishedReport
+      ? `\n\nBRAND HEADER: put the Navy Federal logo at the very top of the page (in the header) using this EXACT snippet, do not change the placeholder text. Keep the white pill wrapper so the logo reads on any background:\n<span style="display:inline-block;background:#ffffff;padding:8px 14px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.12);"><img src="${NFCU_LOGO_TOKEN}" alt="Navy Federal Credit Union" style="height:44px;width:auto;display:block;" /></span>`
+      : "";
     try {
       let coderUser;
       if (finishedReport) {
         const srcList = citations.length
-          ? citations.map((c, i) => `[${i + 1}] ${c.title ? c.title + " — " : ""}${c.url}`).join("\n")
+          ? citations.map((c, i) => `[${i + 1}] ${c.title ? c.title + ": " : ""}${c.url}`).join("\n")
           : "";
-        coderUser = memory +
-`Render the following finished SWOT analysis as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
+        const srcBlock = srcList ? "\nCITATIONS:\n" + srcList : "";
+        const noSrcNote = srcList ? "" : "\n- If no citations are provided, omit the Sources section.";
+        coderUser = memory + (wantsSwot
+? `Render the following finished SWOT analysis as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
 - Show all four SWOT sections, clearly labelled: Strengths, Weaknesses, Opportunities, Threats.
-- Preserve the wording and every fact — do not invent new claims.
-- End with a "Sources" section listing the citations below as clickable links (<a href="…" target="_blank" rel="noopener">), numbered to match any [n] markers in the text.${srcList ? "" : "\n- If no citations are provided, omit the Sources section."}
+- Preserve the wording and every fact. Do not invent new claims.
+- End with a "Sources" section listing the citations below as clickable links (<a href="URL" target="_blank" rel="noopener">), numbered to match any [n] markers in the text.${noSrcNote}
 - Return the full page in a single \`\`\`html fenced code block.
 
 FINISHED SWOT:
 ${finishedReport}
-${srcList ? "\nCITATIONS:\n" + srcList : ""}`;
+${srcBlock}`
+: `Render the following finished report as ONE self-contained HTML document (all CSS inline, no external dependencies). This HTML is the FINAL deliverable.
+- Preserve the report's own structure, headings, wording, and every fact. Do not invent new claims and do not impose a SWOT structure.
+- End with a "Sources" section listing the citations below as clickable links (<a href="URL" target="_blank" rel="noopener">), numbered to match any [n] markers in the text.${noSrcNote}
+- Return the full page in a single \`\`\`html fenced code block.
+
+FINISHED REPORT:
+${finishedReport}
+${srcBlock}`) + logoInstruction + imgInstruction;
       } else {
-        coderUser = memory + task;   // pure code task — original behaviour
+        coderUser = memory + task + imgInstruction;   // pure code task — original behaviour, plus image if one is cached
       }
       const r = await callModel({
         model: cfg.coder.model,
@@ -1519,15 +2148,72 @@ ${srcList ? "\nCITATIONS:\n" + srcList : ""}`;
         user: coderUser,
         temperature: cfg.coder.temp
       });
-      coderFindings = r.content;
-      finalDeliverable = r.content;   // the HTML is the final output for the exercise
-      logStep("coder", r, { grounded: !!finishedReport, citations: citations.length });
-      finishBlock(b, r.content, r);
+      // Keep the placeholder tokens in `workingHtml` all the way through the LLM
+      // chain (coder -> visual identity -> QA). Only embed the real base64 for
+      // DISPLAY of each block and for the final deliverable, never in the text
+      // handed to the next model.
+      let workingHtml = extractCode(r.content);
+      const htmlMode = !!finishedReport || isHtmlLike(workingHtml);
+      const manifest = buildManifest(cfg, { id: runLog.id, at: runLog.started_at, task, selected: (plan.agents || []) });
+      const finalize = () => {
+        finalDeliverable = htmlMode
+          ? fenceHtml(injectManifest(embedAssets(workingHtml, cachedImg, !!finishedReport), manifest))
+          : embedAssets(r.content, cachedImg, false);
+        coderFindings = finalDeliverable;
+        return finalDeliverable;
+      };
+      logStep("coder", r, { grounded: !!finishedReport, citations: citations.length, image: !!cachedImg, logo: !!finishedReport });
+      finishBlock(b, finalize(), r);
+
+      // 6) BRAND VISUAL IDENTITY: restyle the HTML (tokens still placeholders).
+      if (htmlMode && cfg.visual && cfg.visual.enabled) {
+        // Cross-agent theme: carry the same aesthetic as the image and voice into
+        // the page styling, so the deliverable reads as one themed artifact (for
+        // example a pirate + Dutch-masters look) rather than default brand colors.
+        const themeBits = [];
+        const istyle = (cfg.image && cfg.image.style || "").trim();
+        if (istyle) themeBits.push(istyle);
+        const vpk = cfg.voice && cfg.voice.preset;
+        if (vpk && VOICE_PRESETS[vpk] && VOICE_PRESETS[vpk].image) themeBits.push(VOICE_PRESETS[vpk].image);
+        else if (cfg.voice && (cfg.voice.system || "").trim()) themeBits.push(cfg.voice.system.trim());
+        const themeBrief = themeBits.join("; ");
+        const themePrefix = themeBrief ? `THEME DIRECTION (make this the driving aesthetic, blended with the brand): ${themeBrief}\n\n` : "";
+        const vb = addBlock("visual", "brand visual identity · restyle", cfg.visual.model);
+        try {
+          const vr = await callModel({
+            model: cfg.visual.model,
+            system: cfg.visual.system,
+            user: themePrefix + "Restyle this HTML page for visual identity. Return the FULL page in one ```html block, preserving all text and any placeholder image tags.\n\n```html\n" + workingHtml + "\n```",
+            temperature: cfg.visual.temp
+          });
+          const styled = extractCode(vr.content);
+          if (styled && styled.trim()) workingHtml = styled;
+          logStep("brand_visual", vr, {});
+          finishBlock(vb, finalize(), vr);
+        } catch (e) { failBlock(vb, e.message); logStep("brand_visual", null, { error: e.message }); }
+      }
+
+      // 7) CODE QA: validate + repair the (possibly restyled) HTML. Automatic.
+      if (htmlMode && cfg.qa && cfg.qa.enabled) {
+        const qb = addBlock("qa", "code QA · review", cfg.qa.model);
+        try {
+          const qr = await callModel({
+            model: cfg.qa.model,
+            system: cfg.qa.system,
+            user: "Review and repair this HTML if needed. Return the FULL page in one ```html block, preserving all text and any placeholder image tags.\n\n```html\n" + workingHtml + "\n```",
+            temperature: cfg.qa.temp
+          });
+          const fixed = extractCode(qr.content);
+          if (fixed && fixed.trim()) workingHtml = fixed;
+          logStep("code_qa", qr, {});
+          finishBlock(qb, finalize(), qr);
+        } catch (e) { failBlock(qb, e.message); logStep("code_qa", null, { error: e.message }); }
+      }
     } catch (e) { failBlock(b, e.message); logStep("coder", null, { error: e.message }); }
   }
   } finally {
     runLog.finished_at = new Date().toISOString();
-    if (finalDeliverable) lastDeliverable = finalDeliverable;   // remember for the next turn
+    if (finalDeliverable) lastDeliverable = stripDataUris(finalDeliverable);   // remember for the next turn, minus any base64
     if (allCitations.length) lastCitations = allCitations;      // remember sources for a later "render as HTML" turn
     $("memChip").hidden = !lastDeliverable;                     // show the memory indicator once active
     appendExport(runLog);
@@ -1550,9 +2236,11 @@ function snapshotSetup() {
     resp:  { system: $("p-resp").value,  model: m("m-resp"),  temp: t("t-resp") },
     data:  { system: $("p-data").value,  model: m("m-data"),  temp: t("t-data"), urls: getUrls() },
     coder: { system: $("p-coder").value, model: m("m-coder"), temp: t("t-coder") },
-    image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3"), size: ($("s-image") ? $("s-image").value : "512x512") },
+    image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3"), size: "512x512" },
     critic:{ system: $("p-critic").value, model: m("m-critic"), temp: t("t-critic") },
-    voice: { system: $("p-voice").value, model: m("m-voice"), temp: t("t-voice") },
+    voice: { system: $("p-voice").value, model: m("m-voice"), temp: t("t-voice"), preset: $("voicePreset").value, includeCustomInImage: !!($("imgBrandCustom") && $("imgBrandCustom").checked) },
+    visual:{ system: $("p-visual").value, model: m("m-visual"), temp: t("t-visual"), enabled: !($("en-visual")) || $("en-visual").checked },
+    qa:    { system: $("p-qa").value,    model: m("m-qa"),    temp: t("t-qa"),    enabled: !($("en-qa")) || $("en-qa").checked },
     connected: new Set(connectedKeys())
   };
 }
@@ -1587,7 +2275,7 @@ function setCanvasCollapsed(collapsed) {
 $("toggleCanvas").addEventListener("click", () => {
   const collapsed = !document.body.classList.contains("canvas-collapsed");
   setCanvasCollapsed(collapsed);
-  localStorage.setItem("gbswot2:canvasCollapsed", collapsed ? "1" : "0");
+  lsSet("gbswot2:canvasCollapsed", collapsed ? "1" : "0");
 });
 
 loadState();
