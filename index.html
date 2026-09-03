@@ -9,6 +9,7 @@
      Neutral near-black canvas with a bright per-agent neon palette so
      each worker reads as its own color across the whole UI. */
   :root {
+    --fs:        1;         /* text-size multiplier, driven by the A-/A+ control */
     --bg:        #08090a;   /* page canvas */
     --panel:     #0c0c11;   /* pane · neutral dark */
     --card:      #131316;   /* card surface */
@@ -74,24 +75,24 @@
   .hctl { display: flex; align-items: center; gap: 6px; margin-right: 10px; }
   .hbtn {
     background: transparent; border: 1px solid var(--border-hi); border-radius: 6px;
-    color: var(--fg-dim); font-family: var(--sans); font-size: 11px; font-weight: 600;
+    color: var(--fg-dim); font-family: var(--sans); font-size: calc(11px * var(--fs)); font-weight: 600;
     padding: 4px 9px; cursor: pointer; transition: color .12s, border-color .12s, background .12s;
   }
   .hbtn:hover { color: var(--fg); border-color: var(--slime); }
 
   /* custom-voice "include in image" toggle */
   .brandimg-row { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; }
-  .brandimg-chk { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-dim); cursor: pointer; }
+  .brandimg-chk { display: flex; align-items: center; gap: 6px; font-size: calc(11px * var(--fs)); color: var(--fg-dim); cursor: pointer; }
   .brandimg-info {
     display: inline-flex; align-items: center; justify-content: center;
     width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-hi);
-    color: var(--fg-faint); font-size: 10px; font-weight: 700; cursor: help; flex: none;
+    color: var(--fg-faint); font-size: calc(10px * var(--fs)); font-weight: 700; cursor: help; flex: none;
   }
   /* info icon in a card head: the card's description on hover */
   .hint-i {
     display: inline-flex; align-items: center; justify-content: center;
     width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-hi);
-    color: var(--fg-faint); font-size: 10px; font-weight: 700; font-style: normal;
+    color: var(--fg-faint); font-size: calc(10px * var(--fs)); font-weight: 700; font-style: normal;
     cursor: help; flex: none; margin-left: 4px;
   }
   .hint-i:hover { color: var(--fg); border-color: var(--slime); }
@@ -104,7 +105,7 @@
   .tip {
     position: fixed; z-index: 2000; max-width: 300px; display: none;
     background: #14161c; color: #e6e6ea; border: 1px solid var(--border-hi);
-    border-radius: 6px; padding: 8px 10px; font-size: 11.5px; line-height: 1.45;
+    border-radius: 6px; padding: 8px 10px; font-size: calc(11.5px * var(--fs)); line-height: 1.45;
     font-family: var(--sans); box-shadow: 0 6px 24px rgba(0,0,0,.45); pointer-events: none;
   }
 
@@ -115,7 +116,7 @@
     background: var(--bg);
     color: var(--fg);
     font-family: var(--sans);
-    font-size: 13px;
+    font-size: calc(13px * var(--fs));
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
@@ -138,7 +139,7 @@
   }
   header .logo {
     display: flex; align-items: center; gap: 9px;
-    color: var(--fg); font-weight: 500; font-family: var(--mono); font-size: 13px;
+    color: var(--fg); font-weight: 500; font-family: var(--mono); font-size: calc(13px * var(--fs));
   }
   header .logo .u { color: var(--slime); }
   header .logo .a { color: var(--ok); }
@@ -147,9 +148,9 @@
     background: linear-gradient(135deg, var(--slime) 55%, var(--ok) 55%);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--slime) 16%, transparent);
   }
-  header .sub { color: var(--fg-faint); font-size: 12px; }
+  header .sub { color: var(--fg-faint); font-size: calc(12px * var(--fs)); }
   header .spacer { flex: 1; }
-  header .hint { color: var(--fg-faint); font-size: 11px; }
+  header .hint { color: var(--fg-faint); font-size: calc(11px * var(--fs)); }
 
   /* header left cluster — sized to the setup pane so the toggle
      lands on the vertical divider */
@@ -162,7 +163,7 @@
     width: 28px; height: 28px; padding: 0; flex: none;
     background: var(--slime); color: #08080a;
     border: none; border-radius: 6px; cursor: pointer;
-    font-size: 13px; font-weight: 600; transition: background .12s;
+    font-size: calc(13px * var(--fs)); font-weight: 600; transition: background .12s;
   }
   .navtoggle:hover { background: var(--slime-hi); }
 
@@ -182,9 +183,18 @@
   body.canvas-collapsed main { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
   body.canvas-collapsed #canvas { opacity: 0; pointer-events: none; }
 
+  /* small screens (e.g. a 10-inch secondary monitor): give the chat more room */
+  @media (max-width: 1024px) {
+    main { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    main { grid-template-columns: minmax(0, 240px) minmax(0, 1fr); }
+    .hleft { width: auto; }
+  }
+
   .pane-label {
     display: flex; align-items: center; gap: 7px;
-    font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+    font-size: calc(11px * var(--fs)); text-transform: uppercase; letter-spacing: .1em;
     color: var(--fg-faint); margin: 0 0 14px;
   }
   .pane-label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--slime); }
@@ -204,22 +214,22 @@
     padding: 10px 12px; cursor: pointer; user-select: none;
   }
   .card .tag {
-    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
+    font-size: calc(10px * var(--fs)); font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
     color: var(--acc, var(--fg));
   }
-  .card .role { color: var(--fg-faint); font-size: 11px; }
+  .card .role { color: var(--fg-faint); font-size: calc(11px * var(--fs)); }
   .card .head .spacer { flex: 1; }
   .card .status {
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--fg-faint); flex: none;
   }
   .card .status.ok  { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent); }
-  .card .caret { color: var(--fg-faint); font-size: 11px; transition: transform .15s; }
+  .card .caret { color: var(--fg-faint); font-size: calc(11px * var(--fs)); transition: transform .15s; }
   .card.collapsed .caret { transform: rotate(-90deg); }
   .card.collapsed > .body { display: none; }
   .card > .body { padding: 0 12px 12px; }
 
-  label.fld { display: block; font-size: 11px; color: var(--fg-dim); margin: 9px 0 5px; }
+  label.fld { display: block; font-size: calc(11px * var(--fs)); color: var(--fg-dim); margin: 9px 0 5px; }
 
   input, textarea, select {
     width: 100%;
@@ -229,7 +239,7 @@
     border-radius: 6px;
     padding: 8px 9px;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: calc(12px * var(--fs));
     resize: vertical;
     transition: border-color .12s, box-shadow .12s;
   }
@@ -244,7 +254,7 @@
   /* "enlarge" affordance under each prompt textarea + the shared editor modal */
   .expand-btn {
     display: inline-block; margin-top: 4px; background: transparent; border: none;
-    color: var(--fg-faint); font-size: 10.5px; font-family: var(--sans); cursor: pointer; padding: 2px 0;
+    color: var(--fg-faint); font-size: calc(10.5px * var(--fs)); font-family: var(--sans); cursor: pointer; padding: 2px 0;
   }
   .expand-btn:hover { color: var(--slime); }
   .modal-backdrop {
@@ -258,12 +268,12 @@
     box-shadow: 0 12px 48px rgba(0,0,0,.5);
   }
   .modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-  .modal-title { font-size: 13px; font-weight: 600; color: var(--fg); }
-  .modal-x { margin-left: auto; background: transparent; border: none; color: var(--fg-dim); font-size: 15px; cursor: pointer; line-height: 1; }
+  .modal-title { font-size: calc(13px * var(--fs)); font-weight: 600; color: var(--fg); }
+  .modal-x { margin-left: auto; background: transparent; border: none; color: var(--fg-dim); font-size: calc(15px * var(--fs)); cursor: pointer; line-height: 1; }
   .modal-x:hover { color: var(--fg); }
   .modal-panel textarea {
     flex: 1; min-height: 52vh; margin: 0; border: none; border-radius: 0; resize: none; outline: none;
-    background: var(--card); color: var(--fg); font-family: var(--mono); font-size: 13px; line-height: 1.5; padding: 16px;
+    background: var(--card); color: var(--fg); font-family: var(--mono); font-size: calc(13px * var(--fs)); line-height: 1.5; padding: 16px;
   }
   .modal-panel textarea:focus { box-shadow: none; }
   .modal-foot { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border); }
@@ -279,25 +289,25 @@
   input[readonly] { color: var(--fg-dim); cursor: default; background: var(--bg); }
   input[readonly]:hover, input[readonly]:focus { border-color: var(--border); box-shadow: none; }
   .fixed-tag {
-    font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint);
+    font-size: calc(9px * var(--fs)); text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint);
     border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; margin-left: 6px;
   }
 
   /* connector box — wire worker agents to the orchestrator */
-  .conn { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 12px; color: var(--fg); cursor: pointer; }
+  .conn { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: calc(12px * var(--fs)); color: var(--fg); cursor: pointer; }
   .conn .swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--fg-faint)); flex: none; }
-  .conn .r { color: var(--fg-faint); font-size: 11px; margin-left: auto; }
-  .conn-note { font-size: 10.5px; color: var(--fg-faint); margin-top: 8px; line-height: 1.55; }
+  .conn .r { color: var(--fg-faint); font-size: calc(11px * var(--fs)); margin-left: auto; }
+  .conn-note { font-size: calc(10.5px * var(--fs)); color: var(--fg-faint); margin-top: 8px; line-height: 1.55; }
 
   .adv-toggle {
-    margin-top: 10px; font-size: 11px; color: var(--fg-faint);
+    margin-top: 10px; font-size: calc(11px * var(--fs)); color: var(--fg-faint);
     cursor: pointer; user-select: none;
   }
   .adv-toggle:hover { color: var(--slime); }
   .adv { display: none; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
   .adv.open { display: block; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-  .range-out { color: var(--slime); font-size: 11px; font-family: var(--mono); }
+  .range-out { color: var(--slime); font-size: calc(11px * var(--fs)); font-family: var(--mono); }
 
   /* run button */
   .runbar { position: sticky; bottom: 0; padding-top: 12px; }
@@ -305,33 +315,33 @@
     width: 100%;
     background: var(--slime); color: #08080a;
     border: none; border-radius: 6px;
-    padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
+    padding: 11px; font-family: var(--sans); font-size: calc(13px * var(--fs)); font-weight: 500;
     letter-spacing: .01em; cursor: pointer; transition: background .12s;
   }
   button.run:hover { background: var(--slime-hi); }
   button.run:disabled { background: var(--card-2); color: var(--fg-faint); cursor: not-allowed; }
 
   /* save / lock agentic setup */
-  .savebar { position: sticky; bottom: 0; padding-top: 12px; background: var(--bg); }
+  .savebar { padding-top: 12px; background: var(--bg); }
   button.save {
     width: 100%; background: var(--slime); color: #08080a; border: 1px solid transparent;
-    border-radius: 6px; padding: 11px; font-family: var(--sans); font-size: 13px; font-weight: 500;
+    border-radius: 6px; padding: 11px; font-family: var(--sans); font-size: calc(13px * var(--fs)); font-weight: 500;
     cursor: pointer; transition: background .12s, color .12s, border-color .12s;
   }
   button.save:hover { background: var(--slime-hi); }
   button.save.saved { background: var(--card-2); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
-  .save-note { font-size: 10.5px; color: var(--fg-faint); text-align: center; margin-top: 7px; }
+  .save-note { font-size: calc(10.5px * var(--fs)); color: var(--fg-faint); text-align: center; margin-top: 7px; }
   .save-note.dirty { color: var(--slime); }
 
   /* inline agent hint (e.g. orchestrator JSON nudge) */
-  .agent-hint { font-size: 10.5px; color: var(--fg-faint); margin-top: 7px; line-height: 1.55; }
+  .agent-hint { font-size: calc(10.5px * var(--fs)); color: var(--fg-faint); margin-top: 7px; line-height: 1.55; }
   .agent-hint b { color: var(--fg); font-weight: 500; }
-  .agent-hint code { font-size: 10px; }
+  .agent-hint code { font-size: calc(10px * var(--fs)); }
 
   /* informational callout (e.g. Human Review Surface) */
   .callout { background: var(--card-2); border: 1px solid color-mix(in srgb, var(--slime) 30%, var(--border)); border-radius: 6px; padding: 9px 11px; margin-bottom: 11px; }
-  .callout h5 { margin: 0 0 4px; font-size: 11px; font-weight: 500; color: var(--slime); letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
-  .callout p { margin: 0; font-size: 11px; color: var(--fg-dim); line-height: 1.6; }
+  .callout h5 { margin: 0 0 4px; font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--slime); letter-spacing: .02em; display: flex; align-items: center; gap: 6px; }
+  .callout p { margin: 0; font-size: calc(11px * var(--fs)); color: var(--fg-dim); line-height: 1.6; }
   .callout p b { color: var(--fg); font-weight: 500; }
 
   /* ---- chat / trace --------------------------------------------------- */
@@ -352,36 +362,36 @@
   }
   .block .bhead {
     display: flex; align-items: center; gap: 7px;
-    font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
+    font-size: calc(10px * var(--fs)); font-weight: 500; text-transform: uppercase; letter-spacing: .09em;
     color: var(--acc); margin-bottom: 7px;
   }
   .block .bhead .badge {
     color: var(--fg-faint); font-weight: 400; letter-spacing: 0; text-transform: none; font-family: var(--mono);
   }
   .block .bhead .spin { margin-left: auto; }
-  .block .content { white-space: pre-wrap; color: var(--fg); font-size: 12.5px; line-height: 1.62; }
+  .block .content { white-space: pre-wrap; color: var(--fg); font-size: calc(12.5px * var(--fs)); line-height: 1.62; }
   .block .content.dim { color: var(--fg-dim); }
   img.genimg { display: block; max-width: 100%; border-radius: 8px; margin-top: 9px; border: 1px solid var(--border); }
 
   /* copyable code blocks in agent output */
   .codebox { margin: 9px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
   .codebar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 5px 8px; background: var(--card-2); border-bottom: 1px solid var(--border); }
-  .codelang { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint); font-family: var(--mono); }
-  .codecopy { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: 10px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
+  .codelang { flex: none; font-size: calc(10px * var(--fs)); text-transform: uppercase; letter-spacing: .08em; color: var(--fg-faint); font-family: var(--mono); }
+  .codecopy { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: calc(10px * var(--fs)); padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
   .codecopy:hover { color: var(--slime); border-color: color-mix(in srgb, var(--slime) 55%, transparent); }
   /* group the code-box controls on the right so they stay together */
   .codebtns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   /* download + open button, coder-yellow accent, matches the copy button */
-  .codedl { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: 10px; padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
+  .codedl { flex: none; display: flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-dim); font-size: calc(10px * var(--fs)); padding: 3px 8px; cursor: pointer; font-family: var(--sans); transition: color .12s, border-color .12s; }
   .codedl:hover { color: var(--coder); border-color: color-mix(in srgb, var(--coder) 55%, transparent); }
-  .codebox pre { margin: 0; padding: 10px; background: #060608; font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--fg); overflow-x: auto; max-height: 340px; }
+  .codebox pre { margin: 0; padding: 10px; background: #060608; font-family: var(--mono); font-size: calc(11px * var(--fs)); line-height: 1.5; color: var(--fg); overflow-x: auto; max-height: 340px; }
   .codebox pre[hidden] { display: none; }
 
   /* code / preview toggle for HTML output */
   .codetoggle { flex: none; display: flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
   .codetoggle button {
     background: transparent; border: none; color: var(--fg-faint);
-    font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+    font-size: calc(10px * var(--fs)); text-transform: uppercase; letter-spacing: .06em;
     padding: 3px 10px; cursor: pointer; font-family: var(--sans); transition: background .12s, color .12s;
   }
   .codetoggle button + button { border-left: 1px solid var(--border); }
@@ -392,10 +402,10 @@
   .codepreview[hidden] { display: none; }
 
   /* memory indicator */
-  .memchip { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--fg-faint); margin-top: 10px; }
+  .memchip { display: flex; align-items: center; gap: 6px; font-size: calc(10.5px * var(--fs)); color: var(--fg-faint); margin-top: 10px; }
   .memchip[hidden] { display: none; }
 
-  .planlist { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+  .planlist { list-style: none; margin: 0; padding: 0; font-size: calc(12px * var(--fs)); }
   .planlist li { padding: 2px 0; color: var(--fg-dim); }
   .planlist li .mk { color: var(--fg-faint); }
   .planlist li.done .mk { color: var(--ok); }
@@ -407,16 +417,16 @@
   /* final SWOT quadrants */
   .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 9px; }
   .quad { border: 1px solid var(--border); border-radius: 6px; padding: 9px; background: var(--card-2); }
-  .quad h4 { margin: 0 0 5px; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; font-weight: 500; }
+  .quad h4 { margin: 0 0 5px; font-size: calc(10px * var(--fs)); letter-spacing: .09em; text-transform: uppercase; font-weight: 500; }
   .quad.s h4, .quad.w h4 { color: var(--data); }
   .quad.o h4, .quad.t h4 { color: var(--resp); }
-  .quad ul { margin: 0; padding-left: 15px; color: var(--fg); font-size: 11.5px; line-height: 1.55; }
+  .quad ul { margin: 0; padding-left: 15px; color: var(--fg); font-size: calc(11.5px * var(--fs)); line-height: 1.55; }
 
   /* researcher citations */
   .cites { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 8px; }
-  .cites-h { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--resp); margin-bottom: 5px; }
+  .cites-h { font-size: calc(10px * var(--fs)); text-transform: uppercase; letter-spacing: .09em; color: var(--resp); margin-bottom: 5px; }
   a.cite {
-    display: block; font-size: 11px; color: var(--fg-dim); text-decoration: none;
+    display: block; font-size: calc(11px * var(--fs)); color: var(--fg-dim); text-decoration: none;
     padding: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   a.cite:hover { color: var(--slime); }
@@ -434,10 +444,10 @@
   button.addurl {
     margin-top: 2px; background: transparent; color: var(--fg-faint);
     border: 1px solid var(--border); border-radius: 6px; padding: 6px 11px;
-    font-family: var(--sans); font-size: 11px; cursor: pointer; transition: color .12s, border-color .12s;
+    font-family: var(--sans); font-size: calc(11px * var(--fs)); cursor: pointer; transition: color .12s, border-color .12s;
   }
   button.addurl:hover { color: var(--slime); border-color: color-mix(in srgb, var(--slime) 55%, transparent); }
-  .url-help { font-size: 10.5px; color: var(--fg-faint); margin-top: 9px; line-height: 1.55; }
+  .url-help { font-size: calc(10.5px * var(--fs)); color: var(--fg-faint); margin-top: 9px; line-height: 1.55; }
   .url-help a { color: var(--resp); }
   .url-help b { color: var(--fg); font-weight: 500; }
 
@@ -446,7 +456,7 @@
   .data-sources a {
     display: flex; align-items: center; gap: 8px;
     background: var(--card-2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; font-family: var(--mono); font-size: 11.5px;
+    padding: 8px 10px; font-family: var(--mono); font-size: calc(11.5px * var(--fs));
     color: var(--data); text-decoration: none; transition: border-color .12s, color .12s;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -462,17 +472,17 @@
   }
   button.exp {
     background: var(--slime); color: #08080a; border: none; border-radius: 6px;
-    padding: 8px 13px; font-family: var(--sans); font-weight: 500; font-size: 12px; cursor: pointer;
+    padding: 8px 13px; font-family: var(--sans); font-weight: 500; font-size: calc(12px * var(--fs)); cursor: pointer;
     transition: background .12s;
   }
   button.exp:hover { background: var(--slime-hi); }
   button.exp.ghost { background: var(--card-2); color: var(--fg); border: 1px solid var(--border-hi); }
   button.exp.ghost:hover { border-color: color-mix(in srgb, var(--slime) 55%, transparent); color: var(--slime); }
-  .exp-note { color: var(--fg-faint); font-size: 11px; }
+  .exp-note { color: var(--fg-faint); font-size: calc(11px * var(--fs)); }
 
   .inspect { margin-top: 9px; }
   .inspect summary {
-    cursor: pointer; font-size: 10px; color: var(--fg-faint);
+    cursor: pointer; font-size: calc(10px * var(--fs)); color: var(--fg-faint);
     list-style: none; user-select: none;
   }
   .inspect summary::before { content: "⟩ "; color: var(--acc); }
@@ -480,7 +490,7 @@
   .inspect summary:hover { color: var(--slime); }
   .inspect pre {
     margin: 7px 0 0; background: #060608; border: 1px solid var(--border);
-    border-radius: 6px; padding: 9px; font-size: 10.5px; color: var(--fg-dim);
+    border-radius: 6px; padding: 9px; font-size: calc(10.5px * var(--fs)); color: var(--fg-dim);
     font-family: var(--mono); overflow-x: auto; max-height: 240px;
   }
 
@@ -488,7 +498,13 @@
   .err .bhead { color: #f7768e; }
 
   /* chat input */
-  .composer { display: flex; gap: 8px; margin-top: 10px; position: sticky; bottom: 0; background: var(--bg); padding-top: 10px; }
+  /* chat pane is a flex column: the message trace scrolls, the composer sits
+     at the bottom as a normal element. NOT sticky, because CSS zoom on <main>
+     (from the font-size control) breaks the hit-testing of sticky/fixed
+     descendants, which made the input unclickable. */
+  #chat { display: flex; flex-direction: column; overflow: hidden; }
+  #chat #trace { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .composer { display: flex; gap: 8px; margin-top: 10px; background: var(--bg); padding-top: 10px; flex: none; }
   .composer input { flex: 1; }
   .composer button {
     background: var(--slime); color: #08080a; border: none;
@@ -502,8 +518,8 @@
     border-top-color: var(--acc); border-radius: 50%; animation: sp .7s linear infinite; }
   @keyframes sp { to { transform: rotate(360deg); } }
 
-  code { color: var(--slime); background: var(--card-2); padding: 1px 5px; border-radius: 4px; font-size: 11px; font-family: var(--mono); }
-  .empty { color: var(--fg-faint); font-size: 12px; padding: 22px 4px; line-height: 1.7; }
+  code { color: var(--slime); background: var(--card-2); padding: 1px 5px; border-radius: 4px; font-size: calc(11px * var(--fs)); font-family: var(--mono); }
+  .empty { color: var(--fg-faint); font-size: calc(12px * var(--fs)); padding: 22px 4px; line-height: 1.7; }
   .empty b { color: var(--fg); font-weight: 500; }
 </style>
 </head>
@@ -695,6 +711,14 @@
         <span class="caret">▾</span>
       </div>
       <div class="body">
+        <label class="fld">Style preset <span style="color:var(--fg-faint)">(adds a ready-made look you can still edit)</span></label>
+        <select id="visualPreset">
+          <option value="">no preset (use your prompt below)</option>
+          <option value="retro_gaming">Retro gaming (8-bit arcade)</option>
+          <option value="win98">Old-school Windows (95 / 98)</option>
+          <option value="geocities">Geocities / MySpace (90s web)</option>
+          <option value="matrix">Matrix (green digital rain)</option>
+        </select>
         <label class="fld">System prompt</label>
         <textarea id="p-visual"></textarea>
         <div class="adv-toggle" data-adv>▸ advanced</div>
@@ -1032,7 +1056,7 @@ const trace = $("trace");
 const PERSIST = ["apiKey","defaultModel",
                  "m-orch","m-resp","m-data","m-coder","m-critic","m-voice",
                  "t-orch","t-resp","t-data","t-coder","t-critic","t-voice"];
-const EPHEMERAL = new Set(["p-orch","p-resp","p-data","p-coder","p-image","p-critic","p-voice","p-visual","p-qa","criticPreset","voicePreset"]);
+const EPHEMERAL = new Set(["p-orch","p-resp","p-data","p-coder","p-image","p-critic","p-voice","p-visual","p-qa","criticPreset","voicePreset","visualPreset"]);
 
 function loadState() {
   // drop any previously written system prompts — fresh slate every refresh
@@ -1186,7 +1210,7 @@ if ($("themeToggle")) $("themeToggle").addEventListener("click", () => setTheme(
 applyTheme(getTheme());
 
 const FONT_MIN = 0.9, FONT_MAX = 1.6, FONT_STEP = 0.1;
-function applyFontScale(s) { const m = document.querySelector("main"); if (m) m.style.zoom = String(s); }
+function applyFontScale(s) { document.documentElement.style.setProperty("--fs", String(s)); }   // scales text via calc(...*var(--fs)); no zoom, so positioning is unaffected
 function getFontScale() { const v = parseFloat(lsGet("gbswot2:fontScale")); return (v && !isNaN(v)) ? v : 1; }
 function setFontScale(s) {
   s = Math.min(FONT_MAX, Math.max(FONT_MIN, Math.round(s * 10) / 10));
@@ -1212,6 +1236,35 @@ $("voicePreset").addEventListener("change", () => {
   const p = VOICE_PRESETS[v];
   if (p) { $("p-voice").value = p.text; saveField("p-voice"); }
 });
+
+/* Visual identity style presets. Unlike the voice preset (which replaces the
+   whole prompt), these ADD a managed section to the visual identity prompt so the
+   student keeps the base prompt and their edits above it. Picking a different
+   preset swaps the section; picking "no preset" removes it. The section is
+   delimited so it can be found and replaced. */
+const VISUAL_PRESET_OPEN = "\n\n----- STYLE PRESET (from the dropdown; edit or remove freely) -----\n";
+const VISUAL_PRESET_CLOSE = "\n----- END STYLE PRESET -----";
+const VISUAL_PRESETS = {
+  retro_gaming:
+`Apply an 8-bit retro arcade video-game aesthetic. Dark background with bright saturated arcade colors (neon magenta, cyan, lime, yellow). Use a monospace or blocky pixel-style font stack, chunky solid borders, and hard offset drop shadows for a pixel feel. Frame sections like arcade panels, use uppercase headings, and add faint scanlines via a repeating linear-gradient overlay. Keep all text crisp and readable. Inline CSS only, no external fonts or images.`,
+  win98:
+`Apply a Windows 95/98 desktop UI aesthetic (like 98.css). Silver-gray surfaces (#c0c0c0) on a teal desktop background (#008080). Give panels beveled 3D borders using outset and inset styles (light top/left, dark bottom/right), title bars with a navy-to-blue gradient and bold white text, and raised-bevel buttons. Use a Tahoma / MS Sans Serif style sans-serif stack. Present content inside window-like boxes and keep it readable. Inline CSS only, no external fonts or images.`,
+  geocities:
+`Apply a chaotic late-1990s Geocities / MySpace personal-homepage aesthetic, evoked entirely with inline CSS and emoji (no external images or gifs). Busy tiled or glittery background via CSS gradients, clashing bright colors, and a Comic Sans style font stack. Recreate era touches in CSS: a marquee-style scrolling banner via a CSS keyframe animation, blinking text via a CSS animation, rainbow gradient headings, an "Under Construction" notice with a construction emoji, and a fake visitor hit-counter styled as a small black LCD box. Center the content with lots of decorative borders. Keep the actual report text readable despite the busy styling.`,
+  matrix:
+`Apply a "Matrix" aesthetic: near-black background (#000) with phosphor-green (#00ff41) monospace text and a subtle green glow. Add a decorative digital-rain backdrop of faint falling green characters behind the content, implemented as a self-contained inline <canvas> with a small inline script (or a pure-CSS fallback), kept low-opacity so it never obscures the text. Put the report content in a semi-transparent dark panel with a thin green border for readability. The rain is decorative only; keep every heading and paragraph fully legible, never scrambled. Inline CSS/JS only, no external dependencies.`
+};
+function applyVisualPreset() {
+  const sel = $("visualPreset"); if (!sel) return;
+  const v = sel.value;
+  let base = $("p-visual").value;
+  const at = base.indexOf(VISUAL_PRESET_OPEN);
+  if (at !== -1) base = base.slice(0, at).replace(/\s+$/, "");   // strip any existing managed section
+  if (v && VISUAL_PRESETS[v]) base = base + VISUAL_PRESET_OPEN + VISUAL_PRESETS[v] + VISUAL_PRESET_CLOSE;
+  $("p-visual").value = base;
+  saveField("p-visual");
+}
+$("visualPreset").addEventListener("change", applyVisualPreset);
 
 /* critic preset -> fills the (otherwise blank) critic prompt */
 $("criticPreset").addEventListener("change", () => {
@@ -1677,7 +1730,7 @@ function renderCriticReview(b, review, io) {
   b.querySelector(".spin-wrap").innerHTML = "";
   const c = b.querySelector(".content"); c.classList.remove("dim"); c.innerHTML = "";
   const accepted = review.verdict === "accept";
-  c.appendChild(el(`<div style="margin-bottom:7px;font-size:11px">` +
+  c.appendChild(el(`<div style="margin-bottom:7px;font-size:calc(11px * var(--fs))">` +
       `<span style="color:${accepted ? "var(--ok)" : "var(--critic)"}">●</span> ` +
       `verdict: <b style="color:var(--fg)">${accepted ? "ACCEPT" : "REVISE"}</b> ` +
       `<span style="color:var(--fg-faint)">· score ${esc(String(review.score ?? "—"))}/10</span></div>`));
@@ -1686,7 +1739,7 @@ function renderCriticReview(b, review, io) {
   assess.textContent = review.assessment || "";
   c.appendChild(assess);
   if (Array.isArray(review.fixes) && review.fixes.length) {
-    const ul = el(`<ul style="margin:7px 0 0;padding-left:16px;color:var(--fg-dim);font-size:11.5px;line-height:1.55"></ul>`);
+    const ul = el(`<ul style="margin:7px 0 0;padding-left:16px;color:var(--fg-dim);font-size:calc(11.5px * var(--fs));line-height:1.55"></ul>`);
     review.fixes.forEach(f => { const li = document.createElement("li"); li.textContent = f; ul.appendChild(li); });
     c.appendChild(ul);
   }
@@ -1824,7 +1877,7 @@ async function run() {
     const c = orchBlock.querySelector(".content");
     c.classList.remove("dim");
     c.innerHTML = `<ul class="planlist">${steps}</ul>
-        <div style="margin-top:6px;color:var(--fg-faint);font-size:11px">agents selected: <code>${esc(chosen)}</code></div>`;
+        <div style="margin-top:6px;color:var(--fg-faint);font-size:calc(11px * var(--fs))">agents selected: <code>${esc(chosen)}</code></div>`;
     orchBlock.appendChild(el(`<details class="inspect"><summary>inspect raw messages</summary>
       <pre>REQUEST\n${esc(JSON.stringify(r.sent, null, 2))}\n\nRESPONSE\n${esc(JSON.stringify(r.received, null, 2))}</pre></details>`));
   } catch (e) { failBlock(orchBlock, e.message); return; }
@@ -2177,7 +2230,10 @@ ${srcBlock}`) + logoInstruction + imgInstruction;
         if (vpk && VOICE_PRESETS[vpk] && VOICE_PRESETS[vpk].image) themeBits.push(VOICE_PRESETS[vpk].image);
         else if (cfg.voice && (cfg.voice.system || "").trim()) themeBits.push(cfg.voice.system.trim());
         const themeBrief = themeBits.join("; ");
-        const themePrefix = themeBrief ? `THEME DIRECTION (make this the driving aesthetic, blended with the brand): ${themeBrief}\n\n` : "";
+        // An explicit style preset (from the dropdown) is already baked into the
+        // visual identity system prompt and takes precedence, so we do not also
+        // push the auto theme direction, which would fight it.
+        const themePrefix = (themeBrief && !(cfg.visual && cfg.visual.preset)) ? `THEME DIRECTION (make this the driving aesthetic, blended with the brand): ${themeBrief}\n\n` : "";
         const vb = addBlock("visual", "brand visual identity · restyle", cfg.visual.model);
         try {
           const vr = await callModel({
@@ -2239,7 +2295,7 @@ function snapshotSetup() {
     image: { style:  $("p-image").value, model: ($("m-image").value.trim() || "qwen/qwen-image-3"), size: "512x512" },
     critic:{ system: $("p-critic").value, model: m("m-critic"), temp: t("t-critic") },
     voice: { system: $("p-voice").value, model: m("m-voice"), temp: t("t-voice"), preset: $("voicePreset").value, includeCustomInImage: !!($("imgBrandCustom") && $("imgBrandCustom").checked) },
-    visual:{ system: $("p-visual").value, model: m("m-visual"), temp: t("t-visual"), enabled: !($("en-visual")) || $("en-visual").checked },
+    visual:{ system: $("p-visual").value, model: m("m-visual"), temp: t("t-visual"), enabled: !($("en-visual")) || $("en-visual").checked, preset: ($("visualPreset") ? $("visualPreset").value : "") },
     qa:    { system: $("p-qa").value,    model: m("m-qa"),    temp: t("t-qa"),    enabled: !($("en-qa")) || $("en-qa").checked },
     connected: new Set(connectedKeys())
   };
